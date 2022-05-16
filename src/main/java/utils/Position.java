@@ -4,8 +4,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class Position {
-    int x;
-    int y;
+    private int x;
+    private int y;
 
     public Position() {
     }
@@ -29,5 +29,20 @@ public class Position {
 
     public void setY(int y) {
         this.y = y;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+
+        if (!(obj instanceof Position)) {
+            return false;
+        }
+
+        Position p = (Position) obj;
+
+        return this.x == p.getX() && this.y == p.getY();
     }
 }

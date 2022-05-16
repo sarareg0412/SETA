@@ -9,7 +9,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +37,7 @@ public class TaxiNetwork {
     public synchronized void addTaxiInfo(TaxiInfo taxi) throws TaxiAlreadyPresentException {
         if (!idAlreadyPresent(taxi.getId())) {
             taxiInfoList.add(taxi);                         //Add taxi to list
-            position = Utils.getRandomStartPosition();      //Set taxi's starting position
+            position = Utils.getRandomStartingPosition();      //Set taxi's starting position
         }else
             throw new TaxiAlreadyPresentException();
     }

@@ -5,12 +5,11 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import javafx.geometry.Pos;
-
-import java.awt.*;
 
 public class Utils {
     public static final String taxiServiceAddress = "http://localhost:1337/";
+    public static final int cellsNumber = 10;
+
     public static Position[] rechargeStations = {  new Position(0,0),
                                                 new Position(0,9),
                                                 new Position(9,0),
@@ -39,8 +38,25 @@ public class Utils {
         }
     }
 
-    public static Position getRandomStartPosition(){
+    public static Position getRandomStartingPosition(){
         return rechargeStations[(int) (Math.random()*5)];
     }
 
+    public static Position getRandomPosition(){
+        return new Position((int) (Math.random()*10 ), (int) (Math.random()*10 ));
+    }
+
+    public static int getDistrictFromPosition(Position p){
+        int half = cellsNumber/2;
+        if (p.getX() < half && p.getY() < half)
+            return 1;
+        if (p.getX() < half && p.getY() >= half)
+            return 2;
+        if (p.getX() >= half && p.getY() < half)
+            return 3;
+        if (p.getX() >= half && p.getY() >= half)
+            return 4;
+
+        return 0;
+    }
 }
