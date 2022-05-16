@@ -7,4 +7,8 @@ public class TaxiNotFoundException extends Exception {
         this.message = "Taxi not found in the network";
     }
 
+    @Override
+    public String getMessage() {
+        return message;
+    }
 }

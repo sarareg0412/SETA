@@ -10,6 +10,7 @@ public class Seta {
     public static MqttClient client;
     public static MqttConnectOptions connOpts;
     public static String[] topics;
+    public static int qos;
 
     public static void main (String argv[]){
         try {
@@ -26,5 +27,14 @@ public class Seta {
                               "seta/smartcity/rides/district4"};
         client = new MqttClient("tcp://localhost:1883", MqttClient.generateClientId());
         connOpts = new MqttConnectOptions();
+        connOpts.setCleanSession(true);         //session will be persistent
+        qos = 2;      //quality of service set to 2
+
+
+    }
+
+    public static int[] generateRandomCoordinates(){
+        int[] coord = new int[2];
+        return coord;
     }
 }

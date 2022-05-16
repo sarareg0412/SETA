@@ -17,15 +17,30 @@ public class TaxiService {
     }
 
     /* Insert the new taxi in the network */
+    @Path("add")
     @POST
     @Consumes({"application/json", "application/xml"})
-    public Response addTaxi(Taxi taxi){
+    public Response addTaxi(TaxiInfo taxi){
         try {
-            TaxiNetwork.getInstance().addTaxi(taxi);
-            return Response.ok().build();
+            TaxiNetwork.getInstance().addTaxiInfo(taxi);
+            return Response.ok(TaxiNetwork.getInstance()).build();
         } catch (TaxiAlreadyPresentException e) {
             //Taxi already present
-            return Response.status(Response.Status.CONFLICT).build();
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
+    }
+
+    /* Delete a taxi by its id */
+    @Path("delete/{id}")
+    @DELETE
+    @Produces({"application/json", "application/xml"})
+    public Response deleteWord(@PathParam("id") String id){
+        try {
+            TaxiNetwork.getInstance().deleteTaxiInfoById(id);
+            return Response.ok().build();
+        } catch (Exception e) {
+            //Taxi not found
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
     }
 }
