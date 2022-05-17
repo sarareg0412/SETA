@@ -5,6 +5,8 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import taxi.TaxiInfo;
+import taxi.TaxiNetwork;
 
 public class Utils {
     public static final String taxiServiceAddress = "http://localhost:1337/";
@@ -16,7 +18,7 @@ public class Utils {
                                                 new Position(9,9)};
 
     /* Given a client, url and object, send a POST request with that object as parameter*/
-    public static <T> ClientResponse postRequest(Client client, String url, T t){
+    public static ClientResponse postRequest(Client client, String url, TaxiInfo t){
         WebResource webResource = client.resource(url);
         String input = new Gson().toJson(t);
         try {
@@ -39,7 +41,7 @@ public class Utils {
     }
 
     public static Position getRandomStartingPosition(){
-        return rechargeStations[(int) (Math.random()*5)];
+        return rechargeStations[(int) (Math.random() * 5) - 1];
     }
 
     public static Position getRandomPosition(){

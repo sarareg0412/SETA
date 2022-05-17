@@ -67,4 +67,12 @@ public class TaxiNetwork {
         }
         return null;
     }
+
+    public List<TaxiInfo> getTaxiInfoList() {
+        return new ArrayList<>(taxiInfoList);
+    }
+
+    public Position getPosition() {
+        return position;
+    }
 }

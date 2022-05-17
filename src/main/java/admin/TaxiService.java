@@ -20,6 +20,7 @@ public class TaxiService {
     @Path("add")
     @POST
     @Consumes({"application/json", "application/xml"})
+    @Produces({"application/json", "application/xml"})
     public Response addTaxi(TaxiInfo taxi){
         try {
             TaxiNetwork.getInstance().addTaxiInfo(taxi);
@@ -33,7 +34,6 @@ public class TaxiService {
     /* Delete a taxi by its id */
     @Path("delete/{id}")
     @DELETE
-    @Produces({"application/json", "application/xml"})
     public Response deleteWord(@PathParam("id") String id){
         try {
             TaxiNetwork.getInstance().deleteTaxiInfoById(id);
