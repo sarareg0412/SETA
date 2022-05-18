@@ -1,12 +1,17 @@
 package taxi;
 
+import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.ClientResponse.Status;
+import com.sun.jersey.api.client.WebResource;
+import exceptions.taxi.TaxiAlreadyPresentException;
 import utils.Position;
 import utils.Utils;
 
+import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -21,13 +26,22 @@ public class Taxi {
 
     public static void main(String argv[]){
         initComponents();
-        initTaxi();
-        // The taxi requests to join the network
-        TaxiNetwork taxiNetwork = insertTaxi(taxiInfo);
-        System.out.print("Taxi added with position: " + taxiNetwork.getPosition() + "\n");
-        position = taxiNetwork.getPosition();
-        for (TaxiInfo taxiInfo : taxiNetwork.getTaxiInfoList())
-            System.out.print("Taxis present : " + taxiInfo.getId() + "\n");
+        while (true){
+            initTaxi();
+
+            try {
+                // The taxi requests to join the network
+                TaxiNetwork taxiNetwork = insertTaxi(taxiInfo);
+                System.out.print("Taxi added with position: " + taxiNetwork.getPosition() + "\n");
+                position = taxiNetwork.getPosition();
+                for (TaxiInfo taxiInfo : taxiNetwork.getTaxiInfoList())
+                    System.out.print("Taxis present : " + taxiInfo.getId() + "\n");
+            } catch (TaxiAlreadyPresentException e) {
+                System.out.print(e.getMessage() + "\n");
+            } catch (Exception e) {
+                System.out.print(e.getMessage() + "\n");
+            }
+        }
     }
 
     public static void initComponents(){
@@ -80,14 +94,40 @@ public class Taxi {
     }
 
     /* A new taxi requested to enter the smart city */
-    public static TaxiNetwork insertTaxi(TaxiInfo taxiInfo){
+    public static TaxiNetwork insertTaxi(TaxiInfo taxiInfo) throws Exception {
         String path = Utils.taxiServiceAddress + taxiServicePath + "/add";
-        ClientResponse clientResponse = Utils.postRequest(client, path, taxiInfo);
+        ClientResponse clientResponse = sendPOSTRequest(client, path, taxiInfo);
         System.out.print("ok " + clientResponse +"\n");
-        //TODO: gestire Client Response diverse da 200
         if (clientResponse == null){
             //TODO
         }
-        return clientResponse.getEntity(TaxiNetwork.class);
+
+        TaxiNetwork taxiNetworkResponse = null;
+
+        int statusInfo = clientResponse.getStatus();
+
+        if (Status.OK.getStatusCode() == statusInfo) {
+            //Taxi correctly added
+            taxiNetworkResponse = clientResponse.getEntity(TaxiNetwork.class);
+        } else if (Status.CONFLICT.getStatusCode() == statusInfo) {
+            //Taxi already added
+            throw new TaxiAlreadyPresentException();
+        }else {
+            throw new Exception("Status code: "+ statusInfo);
+        }
+
+        return taxiNetworkResponse;
+    }
+
+    /* Given a client, url and object, send a POST request with that object as parameter*/
+    public static ClientResponse sendPOSTRequest(Client client, String url, TaxiInfo t){
+        WebResource webResource = client.resource(url);
+        String input = new Gson().toJson(t);
+        try {
+            return webResource.type("application/json").post(ClientResponse.class, input);
+        } catch (ClientHandlerException e) {
+            System.out.println("Service unavailable");
+            return null;
+        }
     }
 }
