@@ -1,0 +1,13 @@
+package it.project.ride;
+
+message Ride{
+
+  message PositionMsg{
+    required int32 x = 1;
+    required int32 y = 2;
+  }
+
+  required string id = 1;
+  required PositionMsg start = 2;
+  required PositionMsg finish = 3;
+}

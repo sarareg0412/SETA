@@ -26,7 +26,8 @@ public class Taxi {
 
     public static void main(String argv[]){
         initComponents();
-        while (true){
+        boolean initComplete = false;
+        do{
             initTaxi();
 
             try {
@@ -36,12 +37,13 @@ public class Taxi {
                 position = taxiNetwork.getPosition();
                 for (TaxiInfo taxiInfo : taxiNetwork.getTaxiInfoList())
                     System.out.print("Taxis present : " + taxiInfo.getId() + "\n");
+                initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
                 System.out.print(e.getMessage() + "\n");
             } catch (Exception e) {
                 System.out.print(e.getMessage() + "\n");
             }
-        }
+        }while (initComplete);
     }
 
     public static void initComponents(){

@@ -7,6 +7,8 @@ import com.sun.jersey.api.client.WebResource;
 
 public class Utils {
     public static final String taxiServiceAddress = "http://localhost:1337/";
+    public static final String MQTTBrokerAddress = "tcp://localhost:1883";
+
     public static final int cellsNumber = 10;
 
     public static Position[] rechargeStations = {  new Position(0,0),

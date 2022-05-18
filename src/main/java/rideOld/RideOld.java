@@ -1,13 +1,13 @@
-package ride;
+package rideOld;
 
 import utils.Position;
 
-public class Ride {
+public class RideOld {
     private String id;
     private Position start;
     private Position end;
 
-    public Ride(String id, Position start, Position end) {
+    public RideOld(String id, Position start, Position end) {
         this.id = id;
         this.start = start;
         this.end = end;
@@ -36,4 +36,5 @@ public class Ride {
     public void setEnd(Position end) {
         this.end = end;
     }
+
 }
