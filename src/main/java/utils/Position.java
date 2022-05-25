@@ -45,4 +45,11 @@ public class Position {
 
         return this.x == p.getX() && this.y == p.getY();
     }
+
+    @Override
+    public String toString() {
+        return "x=" + x +
+                ", y=" + y +
+                '}';
+    }
 }

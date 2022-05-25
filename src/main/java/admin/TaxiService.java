@@ -23,8 +23,9 @@ public class TaxiService {
     @Produces({"application/json", "application/xml"})
     public Response addTaxi(TaxiInfo taxi){
         try {
+            TaxiNetwork prev = TaxiNetwork.getInstance();
             TaxiNetwork.getInstance().addTaxiInfo(taxi);
-            return Response.ok(TaxiNetwork.getInstance()).build();
+            return Response.ok(prev).build();
         } catch (TaxiAlreadyPresentException e) {
             //Taxi already present
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
@@ -34,7 +35,7 @@ public class TaxiService {
     /* Delete a taxi by its id */
     @Path("delete/{id}")
     @DELETE
-    public Response deleteWord(@PathParam("id") String id){
+    public Response deleteTaxi(@PathParam("id") String id){
         try {
             TaxiNetwork.getInstance().deleteTaxiInfoById(id);
             return Response.ok().build();

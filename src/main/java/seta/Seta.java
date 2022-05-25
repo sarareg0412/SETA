@@ -1,9 +1,11 @@
 package seta;
 
+import it.project.ride.RideOuterClass.Ride;
+import it.project.ride.RideOuterClass.Ride.*;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
-import rideOld.RideOld;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import utils.Position;
 import utils.Utils;
 
@@ -14,7 +16,6 @@ citizens of the smart city. */
 public class Seta {
     public static MqttClient client;
     public static MqttConnectOptions connOpts;
-    public static String[] topics;
     public static int qos;
 
     public static void main (String argv[]){
@@ -23,9 +24,10 @@ public class Seta {
             //The client is now connected to the broker
             client.connect(connOpts);
             while (true){
-                //Seta starts creating the rides
-                createNewRide(String.valueOf(new Random()));
-                Thread.sleep(5000);
+                //Two new rides are published every 5 seconds
+                publishNewRide();
+                publishNewRide();
+                Thread.sleep(10000);
             }
         }catch (MqttException e) {
             e.printStackTrace();
@@ -35,28 +37,39 @@ public class Seta {
     }
 
     public static void initializeComponents() throws MqttException {
-        topics = new String[]{"seta/smartcity/rides/district1",
-                              "seta/smartcity/rides/district2",
-                              "seta/smartcity/rides/district3",
-                              "seta/smartcity/rides/district4"};
+
         client = new MqttClient(Utils.MQTTBrokerAddress, MqttClient.generateClientId());
         connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);         //session will be persistent
         qos = 2;      //quality of service set to 2
     }
 
-    public static RideOld createNewRide(String id){
+    /*Pass the */
+    public static Ride createNewRide(String id){
         Position start = Utils.getRandomPosition();
         Position finish;
         do {
             finish = Utils.getRandomPosition();
         }while (finish.equals(start));
 
-        return new RideOld(id, start, finish);
+        //Sets the message with the ride infos to be sent to the taxi network
+        Ride ride = Ride.newBuilder().setId(id)
+                .setStart(PositionMsg.newBuilder().setX(start.getX())
+                        .setY(start.getY()).build())
+                .setFinish(PositionMsg.newBuilder().setX(finish.getX())
+                        .setY(finish.getY()).build())
+                .build();
+
+        return ride;
     }
 
-    public static void publishRide(RideOld rideOld){
-        //MqttMessage message = new MqttMessage(ride.get);
+    public static void publishNewRide() throws MqttException {
+        //Seta starts creating the rides with a positive random id
+        Ride ride = createNewRide(String.valueOf(Math.abs(new Random().nextInt())));
+        MqttMessage msg = new MqttMessage(ride.toByteArray());
+        msg.setQos(qos);
+        System.out.print("Ride published:" + ride);
+        client.publish(Utils.getDistrictTopicFromPosition(ride.getStart().getX(), ride.getStart().getY()), msg);
     }
 
 }
