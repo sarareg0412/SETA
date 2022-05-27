@@ -2,24 +2,14 @@ package taxi;
 
 import exceptions.taxi.TaxiAlreadyPresentException;
 import exceptions.taxi.TaxiNotFoundException;
-import utils.Position;
 import utils.Utils;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
 
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
 public class TaxiNetwork {
 
-    @XmlElement( name = "taxiList"  )
     private List<TaxiInfo> taxiInfoList;
-    @XmlElement( name = "position"  )
-    private Position position;
 
     private static TaxiNetwork instance;
 
@@ -34,12 +24,17 @@ public class TaxiNetwork {
         return instance;
     }
 
-    public synchronized void addTaxiInfo(TaxiInfo taxi) throws TaxiAlreadyPresentException {
+    public synchronized TaxiResponse addTaxiInfo(TaxiInfo taxi) throws TaxiAlreadyPresentException {
+        TaxiResponse taxiResponse = new TaxiResponse();
+
         if (!idAlreadyPresent(taxi.getId())) {
+            taxiResponse.setTaxiInfoList(taxiInfoList);
+            taxiResponse.setPosition(Utils.getRandomStartingPosition());
             taxiInfoList.add(taxi);                         //Add taxi to list
-            position = Utils.getRandomStartingPosition();      //Set taxi's starting position
         }else
             throw new TaxiAlreadyPresentException();
+
+        return taxiResponse;
     }
 
     public synchronized void deleteTaxiInfoById(String id) throws TaxiNotFoundException {
@@ -65,14 +60,11 @@ public class TaxiNetwork {
             if (t.getId().equals(id))
                 return t;
         }
-        return null;
+        throw new TaxiNotFoundException();
     }
 
     public List<TaxiInfo> getTaxiInfoList() {
         return new ArrayList<>(taxiInfoList);
     }
 
-    public Position getPosition() {
-        return position;
-    }
 }

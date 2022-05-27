@@ -23,9 +23,8 @@ public class TaxiService {
     @Produces({"application/json", "application/xml"})
     public Response addTaxi(TaxiInfo taxi){
         try {
-            TaxiNetwork prev = TaxiNetwork.getInstance();
-            TaxiNetwork.getInstance().addTaxiInfo(taxi);
-            return Response.ok(prev).build();
+            TaxiResponse response = TaxiNetwork.getInstance().addTaxiInfo(taxi);        // Add the new taxi to the network
+            return Response.ok(response).build();
         } catch (TaxiAlreadyPresentException e) {
             //Taxi already present
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();

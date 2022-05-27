@@ -1,0 +1,8 @@
+syntax = "proto3";
+package it.project.taxiRPC;
+import "proto/ride.proto";
+
+
+service TaxiRPCService {
+  rpc notify(Ride.PositionMsg )
+}

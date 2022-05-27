@@ -18,12 +18,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Locale;
 
 @XmlRootElement
 public class Taxi {
-    private static TaxiInfo taxiInfo;               // Taxi's info: id; port number and address
-    private static int batteryLevel;                // Taxi's battery level
+    private static TaxiInfo taxiInfo;                      // Taxi's info: id; port number and address
+
+    private static List<TaxiInfo> otherTaxisList;
+
+    private static int batteryLevel;                       // Taxi's battery level
     private static Position position = new Position();     // Taxi's current position in Cartesian coordinates
     private static String taxiServicePath;
     private static Client client;
@@ -41,10 +45,10 @@ public class Taxi {
 
             try {
                 // The taxi requests to join the network
-                TaxiNetwork taxiNetwork = insertTaxi(taxiInfo);
-                System.out.print("Taxi added with position: " + taxiNetwork.getPosition() + "\n");
-                position = taxiNetwork.getPosition();
-                for (TaxiInfo taxiInfo : taxiNetwork.getTaxiInfoList())
+                TaxiResponse taxiResponse = insertTaxi(taxiInfo);
+                System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
+                position = taxiResponse.getPosition();
+                for (TaxiInfo taxiInfo : taxiResponse.getTaxiInfoList())
                     System.out.print("Taxis present : " + taxiInfo.getId() +  "\n");
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
@@ -156,7 +160,7 @@ public class Taxi {
     }
 
     /* A new taxi requested to enter the smart city */
-    public static TaxiNetwork insertTaxi(TaxiInfo taxiInfo) throws Exception {
+    public static TaxiResponse insertTaxi(TaxiInfo taxiInfo) throws Exception {
         String path = Utils.taxiServiceAddress + taxiServicePath + "/add";
         ClientResponse clientResponse = sendPOSTRequest(client, path, taxiInfo);
         System.out.print("ok " + clientResponse +"\n");
@@ -164,13 +168,13 @@ public class Taxi {
             //TODO
         }
 
-        TaxiNetwork taxiNetworkResponse = null;
+        TaxiResponse taxiResponse = null;
 
         int statusInfo = clientResponse.getStatus();
 
         if (Status.OK.getStatusCode() == statusInfo) {
             //Taxi correctly added
-            taxiNetworkResponse = clientResponse.getEntity(TaxiNetwork.class);
+            taxiResponse = clientResponse.getEntity(TaxiResponse.class);
         } else if (Status.CONFLICT.getStatusCode() == statusInfo) {
             //Taxi already added
             throw new TaxiAlreadyPresentException();
@@ -178,7 +182,7 @@ public class Taxi {
             throw new Exception("Status code: "+ statusInfo);
         }
 
-        return taxiNetworkResponse;
+        return taxiResponse;
     }
 
     /* Given a client, url and object, send a POST request with that object as parameter*/
@@ -240,5 +244,9 @@ public class Taxi {
             System.out.println("Service unavailable");
             return null;
         }
+    }
+
+    public static void takeRide(){
+
     }
 }
