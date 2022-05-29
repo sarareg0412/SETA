@@ -1,4 +1,4 @@
-package it.project.ride;
+package unimi.dps.ride;
 
 message Ride{
 

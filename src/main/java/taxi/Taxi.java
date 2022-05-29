@@ -1,6 +1,7 @@
 package taxi;
 
 import com.google.gson.Gson;
+import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -8,16 +9,23 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 import exceptions.taxi.TaxiAlreadyPresentException;
 import exceptions.taxi.TaxiNotFoundException;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
+import unimi.dps.taxi.TaxiRPCServiceGrpc;
+import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
+import unimi.dps.taxi.TaxiRPCServiceOuterClass.TaxiInfoMsg;
 import utils.Position;
 import utils.Utils;
 
-import it.project.ride.RideOuterClass.Ride;
+import unimi.dps.ride.RideOuterClass.Ride;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,7 +56,8 @@ public class Taxi {
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
                 System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
                 position = taxiResponse.getPosition();
-                for (TaxiInfo taxiInfo : taxiResponse.getTaxiInfoList())
+                otherTaxisList = new ArrayList<TaxiInfo>(taxiResponse.getTaxiInfoList());
+                for (TaxiInfo taxiInfo : otherTaxisList)
                     System.out.print("Taxis present : " + taxiInfo.getId() +  "\n");
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
@@ -246,7 +255,26 @@ public class Taxi {
         }
     }
 
-    public static void takeRide(){
+    public static void notifyOtherTaxi(TaxiInfoMsg request , String address, int port){
+        final ManagedChannel channel = ManagedChannelBuilder.forTarget(address+":" + port).usePlaintext().build();
 
+        TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
+
+        stub.newTaxi(request, new StreamObserver<Empty>() {
+            @Override
+            public void onNext(Empty value) {
+
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        });
     }
 }

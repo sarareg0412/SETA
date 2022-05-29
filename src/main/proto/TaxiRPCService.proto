@@ -1,8 +1,15 @@
 syntax = "proto3";
-package it.project.taxiRPC;
-import "proto/ride.proto";
+package unimi.dps.taxi;
+import "Ride.proto";
+import "google/protobuf/empty.proto";
 
+message TaxiInfoMsg{
+  string id = 1;
+  int32 port = 2;
+  string address = 3;
+  ride.Ride.PositionMsg position = 4;
+}
 
 service TaxiRPCService {
-  rpc notify(Ride.PositionMsg )
+  rpc newTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
 }
