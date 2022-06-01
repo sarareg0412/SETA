@@ -7,10 +7,11 @@ import unimi.dps.taxi.TaxiRPCServiceOuterClass;
 
 public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
-    /* Method used to notify the taxis already present that a new one
-    * has been added to the network */
+    /* Method used to add the new taxi to the one already present in the network */
     @Override
     public void newTaxi(TaxiRPCServiceOuterClass.TaxiInfoMsg request, StreamObserver<Empty> responseObserver) {
-        super.newTaxi(request, responseObserver);
+        Empty empty = Empty.newBuilder().build();
+        responseObserver.onNext(empty);     //Sends nothing back to the caller
+        responseObserver.onCompleted();
     }
 }

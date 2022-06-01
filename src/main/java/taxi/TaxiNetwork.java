@@ -28,7 +28,7 @@ public class TaxiNetwork {
         TaxiResponse taxiResponse = new TaxiResponse();
 
         if (!idAlreadyPresent(taxi.getId())) {
-            taxiResponse.setTaxiInfoList(taxiInfoList);
+            taxiResponse.setTaxiInfoList(new ArrayList<>(taxiInfoList));
             taxiResponse.setPosition(Utils.getRandomStartingPosition());
             taxiInfoList.add(taxi);                         //Add taxi to list
         }else
@@ -47,9 +47,11 @@ public class TaxiNetwork {
 
     private boolean idAlreadyPresent(String id){
         List<TaxiInfo> newList = this.taxiInfoList;
-        for (TaxiInfo t : newList){
-            if (t.getId().equals(id))
-                return true;
+        if(newList.size() > 0){
+            for (TaxiInfo t : newList){
+                if (t.getId().equals(id))
+                    return true;
+            }
         }
         return false;
     }

@@ -1,7 +1,7 @@
 package seta;
 
-import it.project.ride.RideOuterClass.Ride;
-import it.project.ride.RideOuterClass.Ride.*;
+import unimi.dps.ride.RideOuterClass.Ride;
+import unimi.dps.ride.RideOuterClass.Ride.*;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;

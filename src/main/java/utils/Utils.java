@@ -4,7 +4,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import it.project.ride.RideOuterClass;
+import unimi.dps.ride.RideOuterClass;
 
 public class Utils {
     public static final String taxiServiceAddress = "http://localhost:1337/";
@@ -55,5 +55,16 @@ public class Utils {
         if (x >= half && y < half)
             district = 4;
         return district;
+    }
+
+    /* Given a client, url and object, send a DELETE request with that object as parameter*/
+    public static ClientResponse sendDELETERequest(Client client, String url){
+        WebResource webResource = client.resource(url);
+        try {
+            return webResource.type("application/json").delete(ClientResponse.class);
+        } catch (ClientHandlerException e) {
+            System.out.println("Service unavailable");
+            return null;
+        }
     }
 }
