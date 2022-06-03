@@ -8,10 +8,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 import exceptions.taxi.TaxiAlreadyPresentException;
-import exceptions.taxi.TaxiNotFoundException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
 import taxi.modules.GRPCServerThread;
@@ -29,30 +27,41 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 @XmlRootElement
 public class Taxi {
-    private static TaxiInfo taxiInfo;                      // Taxi's info: id; port number and address
+    private TaxiInfo taxiInfo;                      // Taxi's info: id; port number and address
 
-    private static List<TaxiInfo> otherTaxisList;
+    private List<Taxi> taxisList = new ArrayList<>();                   // List of other taxis
 
-    private static int batteryLevel;                       // Taxi's battery level
-    private static Position position = new Position();     // Taxi's current position in Cartesian coordinates
-    private static String taxiServicePath;
-    private static Client client;
+    private int batteryLevel;                       // Taxi's battery level
+    private Position position = new Position();     // Taxi's current position in Cartesian coordinates
+    private Client client;
 
     //Ride district subscription
-    private static MqttClient mqttClient;
-    private static String districtTopic;
-    private static int qos;
+    private MqttClient mqttClient;
+    private String districtTopic;
+    private int qos;
 
     //RPC components
-    private static GRPCServerThread grpcServerThread;
+    private GRPCServerThread grpcServerThread;
 
     public static void main(String argv[]){
+        Taxi taxi = new Taxi();
+        taxi.startTaxi();
+    }
+
+    public Taxi() {
+    }
+
+    public Taxi(TaxiInfo taxiInfo) {
+        this.taxiInfo = taxiInfo;
+    }
+
+    public void startTaxi(){
         initGeneralComponents();
         boolean initComplete = false;
         do{
@@ -63,21 +72,25 @@ public class Taxi {
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
                 System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
                 position = taxiResponse.getPosition();
-                if (taxiResponse.getTaxiInfoList() != null)
-                    otherTaxisList = new ArrayList<TaxiInfo>(taxiResponse.getTaxiInfoList());
-                else
-                    otherTaxisList = new ArrayList<>();
+                getTaxisList().add(this);           //The taxi's list now contains itself
 
                 initGRPCComponents();
+                if(taxiResponse.getTaxiInfoList() != null){
+                    //There are other taxis in the network, the current taxi notifies them
+                    //that it has been succesfully added to the network
+                    for (TaxiInfo otherTaxiInfo : taxiResponse.getTaxiInfoList()) {
+                        Taxi other = new Taxi(otherTaxiInfo);
+                        getTaxisList().add(other);          // The taxi's list is updated
 
-                for (TaxiInfo other : otherTaxisList) {
-                    System.out.print("Taxis present : " + other.getId() + "\n");
-                    TaxiInfoMsg newTaxi = TaxiInfoMsg.newBuilder()
-                                                    .setId(other.getId())
-                                                    .setAddress(other.getAddress())
-                                                    .setPort(other.getPort())
-                                                    .build();
-                    notifyOtherTaxi(newTaxi,other.getAddress(), other.getPort());
+                        System.out.print("Taxis present : " + otherTaxiInfo.getId() + "\n");
+                        TaxiInfoMsg newTaxiMsg = TaxiInfoMsg.newBuilder()
+                                .setId(otherTaxiInfo.getId())
+                                .setAddress(otherTaxiInfo.getAddress())
+                                .setPort(otherTaxiInfo.getPort())
+                                .build();
+                        // The taxi notifies the others that it is now part of the network
+                        notifyOtherTaxi(newTaxiMsg, this, other);
+                    }
                 }
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
@@ -100,16 +113,15 @@ public class Taxi {
         exitThread.start();
     }
 
-    public static void initGeneralComponents(){
-        taxiServicePath = "taxis";
+    public void initGeneralComponents(){
         taxiInfo = new TaxiInfo();
         batteryLevel = 100;
         client = Client.create();
     }
 
-    public static void initMqttComponents() throws MqttException {
+    public void initMqttComponents() throws MqttException {
         mqttClient = new MqttClient(Utils.MQTTBrokerAddress, taxiInfo.getId());
-        districtTopic = Utils.getDistrictTopicFromPosition(position.getX(), position.getY());
+        districtTopic = Utils.getDistrictTopicFromPosition(position);
         qos = 2;
         MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
@@ -138,12 +150,12 @@ public class Taxi {
         });
     }
 
-    public static void initGRPCComponents(){
+    public void initGRPCComponents(){
         grpcServerThread = new GRPCServerThread(taxiInfo);
         grpcServerThread.start();
     }
 
-    public static void initTaxi(){
+    public void initTaxi(){
 
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         boolean check = true;
@@ -195,10 +207,9 @@ public class Taxi {
     }
 
     /* A new taxi requested to enter the smart city */
-    public static TaxiResponse insertTaxi(TaxiInfo taxiInfo) throws Exception {
-        String path = Utils.taxiServiceAddress + taxiServicePath + "/add";
+    public TaxiResponse insertTaxi(TaxiInfo taxiInfo) throws Exception {
+        String path = Utils.taxiServiceAddress + Utils.taxiServicePath + "/add";
         ClientResponse clientResponse = sendPOSTRequest(client, path, taxiInfo);
-        System.out.print(clientResponse +"\n");
         if (clientResponse == null){
             //TODO
         }
@@ -221,7 +232,7 @@ public class Taxi {
     }
 
     /* Given a client, url and object, send a POST request with that object as parameter*/
-    public static ClientResponse sendPOSTRequest(Client client, String url, TaxiInfo t){
+    public ClientResponse sendPOSTRequest(Client client, String url, TaxiInfo t){
         WebResource webResource = client.resource(url);
         String input = new Gson().toJson(t);
         try {
@@ -232,22 +243,24 @@ public class Taxi {
         }
     }
 
-
-
     /* The taxi acts as a client and notifies the other taxis that it has been
     * added to the network. */
-    public static void notifyOtherTaxi(TaxiInfoMsg request , String address, int port) throws InterruptedException {
-        final ManagedChannel channel = ManagedChannelBuilder.forTarget(address+":" + port).usePlaintext().build();
+    public void notifyOtherTaxi(TaxiInfoMsg request , Taxi current, Taxi other) throws InterruptedException {
+        final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getTaxiInfo().getAddress()+":" + other.getTaxiInfo().getPort()).usePlaintext().build();
 
         TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
 
         stub.newTaxi(request, new StreamObserver<Empty>() {
             @Override
             public void onNext(Empty value) {
-                addNewTaxiToList(request);
+                //Adds the new taxi to the other one
+                other.getTaxisList().add(current);
+                other.getTaxisList().get(other.getTaxisList().indexOf(current))
+                        .setPosition(new Position(request.getPosition().getX(), request.getPosition().getY()));
+                //addNewTaxiToList(request);
                 System.out.println("taxi " + taxiInfo.getId() + " list : \n");
-                for (TaxiInfo taxiInfo : otherTaxisList)
-                    System.out.print(taxiInfo.getId() +  ";");
+                for (Taxi taxi : taxisList)
+                    System.out.print(taxi.getTaxiInfo().getId() +  ";");
 
                 System.out.println("\n");
             }
@@ -265,17 +278,37 @@ public class Taxi {
         channel.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    public static synchronized void addNewTaxiToList(TaxiInfoMsg taxiInfoMsg){
+    public synchronized void addNewTaxiToList(TaxiInfoMsg taxiInfoMsg){
         Position newTaxiPosition = new Position(taxiInfoMsg.getPosition().getX(), taxiInfoMsg.getPosition().getY());
         TaxiInfo newTaxi = new TaxiInfo(taxiInfoMsg.getId(), taxiInfoMsg.getPort(), taxiInfoMsg.getAddress());
-        otherTaxisList.add(newTaxi);
+        //getTaxisList().add(newTaxi);
     }
 
-    public static TaxiInfo getTaxiInfo() {
+    public void startElection(){
+
+    }
+
+    public TaxiInfo getTaxiInfo() {
         return taxiInfo;
     }
 
-    public static void setTaxiInfo(TaxiInfo taxiInfo) {
-        Taxi.taxiInfo = taxiInfo;
+    public void setTaxiInfo(TaxiInfo taxiInfo) {
+        this.taxiInfo = taxiInfo;
+    }
+
+    public synchronized List<Taxi> getTaxisList() {
+        return taxisList;
+    }
+
+    public void setTaxisList(List<Taxi> taxisList) {
+        this.taxisList = taxisList;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public void setPosition(Position position) {
+        this.position = position;
     }
 }

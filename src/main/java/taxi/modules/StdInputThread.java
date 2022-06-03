@@ -6,6 +6,7 @@ import exceptions.taxi.TaxiNotFoundException;
 import taxi.TaxiInfo;
 import utils.Utils;
 
+import javax.ws.rs.HttpMethod;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -41,7 +42,7 @@ public class StdInputThread extends Thread {
 
     private void deleteTaxi() throws Exception {
         String path = Utils.taxiServiceAddress + "taxis" + "/delete/" + taxiInfo.getId();
-        ClientResponse clientResponse = Utils.sendDELETERequest(Client.create(), path);
+        ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
         System.out.print("ok " + clientResponse +"\n");
         if (clientResponse == null){
             //TODO

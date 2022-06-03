@@ -69,4 +69,7 @@ public class TaxiNetwork {
         return new ArrayList<>(taxiInfoList);
     }
 
+    public void setTaxiInfoList(List<TaxiInfo> taxiInfoList) {
+        this.taxiInfoList = taxiInfoList;
+    }
 }

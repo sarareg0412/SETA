@@ -40,4 +40,13 @@ public class TaxiInfo {
     public void setAddress(String address) {
         this.address = address;
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "id='" + id + '\'' +
+                ", port=" + port +
+                ", address='" + address + '\'' +
+                '}';
+    }
 }

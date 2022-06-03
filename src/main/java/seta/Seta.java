@@ -69,7 +69,7 @@ public class Seta {
         MqttMessage msg = new MqttMessage(ride.toByteArray());
         msg.setQos(qos);
         System.out.print("Ride published:" + ride);
-        client.publish(Utils.getDistrictTopicFromPosition(ride.getStart().getX(), ride.getStart().getY()), msg);
+        client.publish(Utils.getDistrictTopicFromPosition(new Position(ride.getStart().getX(), ride.getStart().getY())), msg);
     }
 
 }

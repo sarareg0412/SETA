@@ -10,6 +10,7 @@ import javax.ws.rs.core.Response;
 public class TaxiService {
 
     /* Return the list of taxis in the network  */
+    @Path("getTaxiList")
     @GET
     @Produces({"application/json", "application/xml"})
     public Response getTaxiList(){
