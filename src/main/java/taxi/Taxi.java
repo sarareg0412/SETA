@@ -27,7 +27,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -208,7 +207,7 @@ public class Taxi {
 
     /* A new taxi requested to enter the smart city */
     public TaxiResponse insertTaxi(TaxiInfo taxiInfo) throws Exception {
-        String path = Utils.taxiServiceAddress + Utils.taxiServicePath + "/add";
+        String path = Utils.servicesAddress + Utils.taxiServicePath + "/add";
         ClientResponse clientResponse = sendPOSTRequest(client, path, taxiInfo);
         if (clientResponse == null){
             //TODO

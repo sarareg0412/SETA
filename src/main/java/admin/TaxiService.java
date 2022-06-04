@@ -1,6 +1,7 @@
 package admin;
 
 import exceptions.taxi.TaxiAlreadyPresentException;
+import exceptions.taxi.TaxiNotFoundException;
 import taxi.*;
 
 import javax.ws.rs.*;
@@ -14,7 +15,8 @@ public class TaxiService {
     @GET
     @Produces({"application/json", "application/xml"})
     public Response getTaxiList(){
-        return Response.ok(TaxiNetwork.getInstance()).build();
+        TaxiResponse response = TaxiNetwork.getInstance().getTaxiInfoList();
+        return Response.ok(response).build();
     }
 
     /* Insert the new taxi in the network */
@@ -39,7 +41,7 @@ public class TaxiService {
         try {
             TaxiNetwork.getInstance().deleteTaxiInfoById(id);
             return Response.ok().build();
-        } catch (Exception e) {
+        } catch (TaxiNotFoundException e) {
             //Taxi not found
             return Response.status(Response.Status.NOT_FOUND).build();
         }

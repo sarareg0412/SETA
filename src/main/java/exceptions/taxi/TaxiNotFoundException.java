@@ -1,11 +1,15 @@
 package exceptions.taxi;
 
 public class TaxiNotFoundException extends Exception {
-    private String message;
+    private String message = "Taxi not found in the network";
 
     public TaxiNotFoundException(){
-        this.message = "Taxi not found in the network";
     }
+
+    public TaxiNotFoundException(String message) {
+        this.message += " " + message;
+    }
+
 
     @Override
     public String getMessage() {

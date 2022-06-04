@@ -34,14 +34,14 @@ public class StdInputThread extends Thread {
                 if (check )
                     deleteTaxi();
             }catch (Exception e){
-                System.out.println("An error occurred.\n");
+                System.out.println("An error occurred." + e.getMessage());
             }
         }
         System.exit(0);
     }
 
     private void deleteTaxi() throws Exception {
-        String path = Utils.taxiServiceAddress + "taxis" + "/delete/" + taxiInfo.getId();
+        String path = Utils.servicesAddress + "taxis" + "/delete/" + taxiInfo.getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
         System.out.print("ok " + clientResponse +"\n");
         if (clientResponse == null){

@@ -65,8 +65,10 @@ public class TaxiNetwork {
         throw new TaxiNotFoundException();
     }
 
-    public List<TaxiInfo> getTaxiInfoList() {
-        return new ArrayList<>(taxiInfoList);
+    public synchronized TaxiResponse getTaxiInfoList() {
+        TaxiResponse taxiResponse = new TaxiResponse(new ArrayList<>(taxiInfoList));
+        taxiResponse.setPosition(null);
+        return taxiResponse;
     }
 
     public void setTaxiInfoList(List<TaxiInfo> taxiInfoList) {

@@ -8,8 +8,10 @@ import com.sun.jersey.api.client.WebResource;
 import javax.ws.rs.HttpMethod;
 
 public class Utils {
-    public static final String taxiServiceAddress = "http://localhost:1337/";
+    public static final String servicesAddress = "http://localhost:1337/";
     public static final String taxiServicePath = "taxis";
+    public static final String statsServicePath = "stats";
+
     public static final String MQTTBrokerAddress = "tcp://localhost:1883";
     public static String[] topics = new String[]{"seta/smartcity/rides/district1",
                                                  "seta/smartcity/rides/district2",
