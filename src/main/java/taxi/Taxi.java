@@ -12,6 +12,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
+import statistics.Stats;
+import statistics.StatsQueue;
 import taxi.modules.GRPCServerThread;
 import taxi.modules.StdInputThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
@@ -32,12 +34,13 @@ import java.util.concurrent.TimeUnit;
 
 @XmlRootElement
 public class Taxi {
-    private TaxiInfo taxiInfo;                      // Taxi's info: id; port number and address
+    private TaxiInfo taxiInfo;                          // Taxi's info: id; port number and address
+    private int batteryLevel;                           // Taxi's battery level
+    private Position position = new Position();         // Taxi's current position in Cartesian coordinates
 
-    private List<Taxi> taxisList = new ArrayList<>();                   // List of other taxis
+    private StatsQueue statsQueue;                      // Taxi's queue of statistics
+    private List<Taxi> taxisList = new ArrayList<>();   // List of other taxis
 
-    private int batteryLevel;                       // Taxi's battery level
-    private Position position = new Position();     // Taxi's current position in Cartesian coordinates
     private Client client;
 
     //Ride district subscription
@@ -287,6 +290,14 @@ public class Taxi {
 
     }
 
+    public void putStatistic(){
+        Stats newStats = new Stats();
+        //stats.setKmDriven();
+        statsQueue.put(newStats);
+    }
+
+
+
     public TaxiInfo getTaxiInfo() {
         return taxiInfo;
     }
@@ -310,4 +321,13 @@ public class Taxi {
     public void setPosition(Position position) {
         this.position = position;
     }
+
+    public int getBatteryLevel() {
+        return batteryLevel;
+    }
+
+    public void setBatteryLevel(int batteryLevel) {
+        this.batteryLevel = batteryLevel;
+    }
+
 }

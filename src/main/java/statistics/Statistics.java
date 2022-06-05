@@ -13,6 +13,10 @@ public class Statistics {
 
     private static Statistics instance;
 
+    public Statistics() {
+        this.statsHashMap = new HashMap<>();
+    }
+
     public static synchronized Statistics getInstance() {
         if(instance==null)
             instance = new Statistics();

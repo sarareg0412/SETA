@@ -46,7 +46,14 @@ public class AdministratorClient {
                 try {
                     printTaxiList();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.print(e.getMessage());
+                }
+                break;
+            case 2:
+                try {
+                    printTaxiStats();
+                } catch (Exception e) {
+                    System.out.print(e.getMessage());
                 }
                 break;
         }
@@ -104,7 +111,7 @@ public class AdministratorClient {
                 System.out.print("There are no statistics for the taxi "+ id +" yet.\n");
         } else if (ClientResponse.Status.NOT_FOUND.getStatusCode() == statusInfo) {
             //The taxi specified does not exist
-            throw new TaxiNotFoundException();
+            throw new TaxiNotFoundException("No stats found for taxi " + id +".");
         }else {
             throw new Exception("Status code: "+ statusInfo);
         }
