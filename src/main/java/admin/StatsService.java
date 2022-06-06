@@ -8,7 +8,7 @@ import statistics.Stats;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
-@Path("stats")
+@Path("/stats")
 public class StatsService {
 
     /* Adds the statistics of a given taxi to the map */
@@ -35,5 +35,17 @@ public class StatsService {
         }
     }
 
-
+    /* Return the list of the statistics of a taxi  */
+    @Path("getLastNTaxiStats/{id}/{n}")
+    @GET
+    @Produces({"application/json", "application/xml"})
+    public Response getLastNTaxiStats(@PathParam("id") String id, @PathParam("n") int n){
+        try {
+            StatsResponse response = new StatsResponse(Statistics.getInstance().getLastNTaxiStats(id, n));
+            return Response.ok(response).build();
+        } catch (TaxiNotFoundException e) {
+            //Taxi not found
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
 }

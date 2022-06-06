@@ -7,7 +7,7 @@ import taxi.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
-@Path("taxis")
+@Path("/taxis")
 public class TaxiService {
 
     /* Return the list of taxis in the network  */

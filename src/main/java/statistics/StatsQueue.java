@@ -11,7 +11,7 @@ public class StatsQueue {
         statsBuffer.add(stats);
     }
 
-    public synchronized ArrayList<Stats> getAllAndClean() {
+    public synchronized ArrayList<Stats> getAllAndEmptyQueue() {
         ArrayList<Stats> statsCopy = new ArrayList<Stats>(statsBuffer);
         statsBuffer.clear();
         return statsCopy;

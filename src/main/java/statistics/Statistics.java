@@ -28,7 +28,7 @@ public class Statistics {
         String id = stats.getTaxiId();
         List<Stats> statsList = statsHashMap.get(id);
 
-        if (stats == null)
+        if (statsList == null)
             statsList = new ArrayList<Stats>();
 
         statsList.add(stats);
@@ -43,6 +43,22 @@ public class Statistics {
             throw new TaxiNotFoundException();
 
         return mapCopy.get(id);
+    }
+
+    /* Returns a list of n statistics of a given taxi. */
+    public List<Stats> getLastNTaxiStats(String id, int n) throws TaxiNotFoundException {
+        List<Stats> listCopy = getStatsHashMap().get(id);     // This is synchronized
+        if (listCopy == null)
+            throw new TaxiNotFoundException();
+
+        int size = listCopy.size();
+
+        if (n >= size){
+            n = size;   // returns all stats
+        }
+        // List ordered from last to first
+        listCopy.sort((o1, o2) -> o2.getTimestamp().compareToIgnoreCase(o1.getTimestamp()));
+        return new ArrayList<>(listCopy.subList( 0, n));
     }
 
     public synchronized HashMap<String, List<Stats>> getStatsHashMap() {

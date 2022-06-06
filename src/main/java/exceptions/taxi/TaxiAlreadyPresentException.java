@@ -4,7 +4,7 @@ public class TaxiAlreadyPresentException extends Exception {
     private String message;
 
     public TaxiAlreadyPresentException(){
-        this.message = "Taxi already present in the network";
+        this.message = "> Taxi already present in the network";
     }
 
     @Override

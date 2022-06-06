@@ -2,18 +2,23 @@ package statistics;
 
 import taxi.TaxiInfo;
 
+import javax.xml.bind.annotation.XmlRootElement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 
+@XmlRootElement
 public class Stats {
     private String taxiId;
-    private Timestamp timestamp;
+    private String timestamp;
     private int battery;
 
-    private int kmDriven;
+    private double kmDriven;
     //Statistics to be sent to the AdministratorServer class
     private ArrayList<Double> airPollutionLev;
     private int completedRides;
+
+    public Stats() {
+    }
 
     public String getTaxiId() {
         return taxiId;
@@ -23,11 +28,11 @@ public class Stats {
         this.taxiId = taxiId;
     }
 
-    public Timestamp getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Timestamp timestamp) {
+    public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -39,11 +44,11 @@ public class Stats {
         this.battery = battery;
     }
 
-    public int getKmDriven() {
+    public double getKmDriven() {
         return kmDriven;
     }
 
-    public void setKmDriven(int kmDriven) {
+    public void setKmDriven(double kmDriven) {
         this.kmDriven = kmDriven;
     }
 

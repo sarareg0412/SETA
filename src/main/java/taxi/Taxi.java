@@ -13,8 +13,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
 import statistics.Stats;
-import statistics.StatsQueue;
 import taxi.modules.GRPCServerThread;
+import taxi.modules.StatsThread;
 import taxi.modules.StdInputThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
@@ -38,7 +38,6 @@ public class Taxi {
     private int batteryLevel;                           // Taxi's battery level
     private Position position = new Position();         // Taxi's current position in Cartesian coordinates
 
-    private StatsQueue statsQueue;                      // Taxi's queue of statistics
     private List<Taxi> taxisList = new ArrayList<>();   // List of other taxis
 
     private Client client;
@@ -50,6 +49,8 @@ public class Taxi {
 
     //RPC components
     private GRPCServerThread grpcServerThread;
+    private StatsThread statsThread;
+    private StdInputThread exitThread;
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -76,7 +77,9 @@ public class Taxi {
                 position = taxiResponse.getPosition();
                 getTaxisList().add(this);           //The taxi's list now contains itself
 
-                initGRPCComponents();
+                initThreads();
+                grpcServerThread.start();
+
                 if(taxiResponse.getTaxiInfoList() != null){
                     //There are other taxis in the network, the current taxi notifies them
                     //that it has been succesfully added to the network
@@ -94,6 +97,7 @@ public class Taxi {
                         notifyOtherTaxi(newTaxiMsg, this, other);
                     }
                 }
+
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
                 System.out.print(e.getMessage() + "\n");
@@ -106,13 +110,21 @@ public class Taxi {
             initMqttComponents();
             mqttClient.subscribe(districtTopic, qos);
             System.out.print("Taxi subscribed to district : " + districtTopic + "\n");
-
+            // Start to send statistics as soon as the taxi is subscribed to the district's topic
+            statsThread.start();
         } catch (MqttException e) {
             e.printStackTrace();
         }
-
-        StdInputThread exitThread = new StdInputThread(taxiInfo);
         exitThread.start();
+
+        while (true) {
+            try {
+                addStatsToQueue();
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void initGeneralComponents(){
@@ -152,9 +164,10 @@ public class Taxi {
         });
     }
 
-    public void initGRPCComponents(){
+    public void initThreads(){
         grpcServerThread = new GRPCServerThread(taxiInfo);
-        grpcServerThread.start();
+        exitThread = new StdInputThread(taxiInfo);
+        statsThread = new StatsThread(this);
     }
 
     public void initTaxi(){
@@ -290,13 +303,12 @@ public class Taxi {
 
     }
 
-    public void putStatistic(){
-        Stats newStats = new Stats();
-        //stats.setKmDriven();
-        statsQueue.put(newStats);
+    public void addStatsToQueue(){
+        Stats stats = new Stats();
+        stats.setTaxiId(taxiInfo.getId());
+        stats.setKmDriven(Math.random()*20 + 5.0);
+        statsThread.getStatsQueue().put(stats);
     }
-
-
 
     public TaxiInfo getTaxiInfo() {
         return taxiInfo;
