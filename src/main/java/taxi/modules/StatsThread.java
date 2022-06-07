@@ -9,6 +9,7 @@ import com.sun.jersey.api.client.WebResource;
 import statistics.Stats;
 import statistics.StatsQueue;
 import taxi.Taxi;
+import taxi.TaxiUtils;
 import utils.Utils;
 
 import java.sql.Timestamp;
@@ -17,12 +18,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StatsThread extends Thread{
-    private Taxi taxi;
     private StatsQueue statsQueue;
     private Client client = Client.create();
 
-    public StatsThread(Taxi taxi) {
-        this.taxi = taxi;
+    public StatsThread() {
         statsQueue = new StatsQueue();
     }
 
@@ -39,7 +38,7 @@ public class StatsThread extends Thread{
 
                 if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
                     //Stat correctly added
-                    System.out.println("Stats correctly added for taxi " + taxi.getTaxiInfo().getId());
+                    System.out.println("Stats correctly added for taxi " + TaxiUtils.getInstance().getTaxiInfo().getId());
                 }else {
                     System.out.println(clientResponse);
                 }
@@ -61,8 +60,8 @@ public class StatsThread extends Thread{
 
         stats.setKmDriven(km);
         stats.setCompletedRides(statsList.size());
-        stats.setTaxiId(taxi.getTaxiInfo().getId());
-        stats.setBattery(taxi.getBatteryLevel());
+        stats.setTaxiId(TaxiUtils.getInstance().getTaxiInfo().getId());
+        stats.setBattery(TaxiUtils.getInstance().getBatteryLevel());
         stats.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
         stats.setAirPollutionLev(pollution);
 

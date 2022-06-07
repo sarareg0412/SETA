@@ -10,7 +10,20 @@ message TaxiInfoMsg{
   ride.Ride.PositionMsg position = 4;
 }
 
+message ElectionMessage{
+  string id = 1;
+  double distance = 2;
+  int32 battery = 3;
+  ride.Ride ride = 4;
+}
+
+
+message OKElection{
+  string ok = 1;
+}
+
 service TaxiRPCService {
-  rpc addTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
+  rpc addTaxi(TaxiInfoMsg) returns (stream google.protobuf.Empty);
   rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
+  rpc startElection(ElectionMessage) returns (OKElection);
 }

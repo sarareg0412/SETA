@@ -4,8 +4,11 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import taxi.Taxi;
+import unimi.dps.ride.RideOuterClass;
 
 import javax.ws.rs.HttpMethod;
+import java.util.List;
 
 public class Utils {
     public static final String servicesAddress = "http://localhost:1337/";
@@ -40,6 +43,10 @@ public class Utils {
 
     public static Position getRandomPosition(){
         return new Position((int) (Math.random()*10 ), (int) (Math.random()*10 ));
+    }
+
+    public static Position getPositionFromPositionMsg(RideOuterClass.Ride.PositionMsg positionMsg){
+        return new Position(positionMsg.getX(),positionMsg.getY());
     }
 
     public static String getDistrictTopicFromPosition(Position p){
@@ -85,4 +92,12 @@ public class Utils {
         return null;
     }
 
+    public static String printTaxiList(List<Taxi> taxis){
+        StringBuilder s = new StringBuilder();
+        for (Taxi t : taxis){
+            s.append(t.getTaxiInfo().getId() + " ");
+        }
+
+        return s.toString();
+    }
 }

@@ -9,6 +9,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import taxi.Taxi;
 import taxi.TaxiInfo;
+import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Utils;
@@ -19,11 +20,6 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 public class ExitThread extends Thread {
-    Taxi taxi;
-
-    public ExitThread(Taxi taxiInfo) {
-        this.taxi = taxiInfo;
-    }
 
     @Override
     public void run() {
@@ -51,13 +47,13 @@ public class ExitThread extends Thread {
 
     private void stopTaxi() throws Exception {
         TaxiInfoMsg taxiInfoMsg = TaxiInfoMsg.newBuilder()
-                                .setId(taxi.getTaxiInfo().getId())
+                                .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
                                 .build();
 
-        for (Taxi other : taxi.getTaxisList()) {
+        for (Taxi other : TaxiUtils.getInstance().getTaxisList()) {
             try {
                 /* The taxi notifies the others present in its list */
-                if(!other.getTaxiInfo().getId().equals(taxi.getTaxiInfo().getId()))
+                if(!other.getTaxiInfo().getId().equals(TaxiUtils.getInstance().getTaxiInfo().getId()))
                     notifyOtherTaxi(taxiInfoMsg, other);
             } catch (InterruptedException e) {
                 System.out.println("> Couldn't notify the other taxi while trying to leave the network. "
@@ -98,7 +94,7 @@ public class ExitThread extends Thread {
     }
 
     private void deleteTaxi() throws Exception {
-        String path = Utils.servicesAddress + "taxis" + "/delete/" + taxi.getTaxiInfo().getId();
+        String path = Utils.servicesAddress + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
         System.out.print("ok " + clientResponse +"\n");
         if (clientResponse == null){
