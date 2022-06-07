@@ -11,5 +11,6 @@ message TaxiInfoMsg{
 }
 
 service TaxiRPCService {
-  rpc newTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
+  rpc addTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
+  rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
 }

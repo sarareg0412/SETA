@@ -2,22 +2,22 @@ package taxi.modules;
 
 import io.grpc.ServerBuilder;
 import taxi.Taxi;
-import taxi.TaxiInfo;
-import taxi.TaxiRPCServiceImpl;
+import RPC.services.TaxiRPCServiceImpl;
 
 import java.io.IOException;
 
 public class GRPCServerThread extends Thread {
-    TaxiInfo taxiInfo;
+    private Taxi taxi;
 
-    public GRPCServerThread(TaxiInfo taxiInfo) {
-        this.taxiInfo = taxiInfo;
+    public GRPCServerThread(Taxi taxi) {
+        this.taxi = taxi;
     }
 
     @Override
     public void run() {
         try {
-            io.grpc.Server rpcServer = ServerBuilder.forPort(taxiInfo.getPort()).addService(new TaxiRPCServiceImpl()).build();
+            io.grpc.Server rpcServer = ServerBuilder.forPort(taxi.getTaxiInfo().getPort())
+                                                    .addService(new TaxiRPCServiceImpl(taxi)).build();
             rpcServer.start();
             rpcServer.awaitTermination();
         } catch (IOException e) {

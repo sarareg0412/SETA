@@ -1,4 +1,4 @@
-package admin;
+package REST;
 
 import exceptions.taxi.TaxiNotFoundException;
 import statistics.Statistics;

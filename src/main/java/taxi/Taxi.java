@@ -8,6 +8,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.WebResource;
 import exceptions.taxi.TaxiAlreadyPresentException;
+import exceptions.taxi.TaxiNotFoundException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -15,7 +16,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import statistics.Stats;
 import taxi.modules.GRPCServerThread;
 import taxi.modules.StatsThread;
-import taxi.modules.StdInputThread;
+import taxi.modules.ExitThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.TaxiInfoMsg;
@@ -50,7 +51,7 @@ public class Taxi {
     //RPC components
     private GRPCServerThread grpcServerThread;
     private StatsThread statsThread;
-    private StdInputThread exitThread;
+    private ExitThread exitThread;
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -64,6 +65,11 @@ public class Taxi {
         this.taxiInfo = taxiInfo;
     }
 
+    public Taxi(TaxiInfo taxiInfo, Position position){
+        this.taxiInfo = taxiInfo;
+        this.position = position;
+    }
+
     public void startTaxi(){
         initGeneralComponents();
         boolean initComplete = false;
@@ -75,7 +81,6 @@ public class Taxi {
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
                 System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
                 position = taxiResponse.getPosition();
-                getTaxisList().add(this);           //The taxi's list now contains itself
 
                 initThreads();
                 grpcServerThread.start();
@@ -83,21 +88,25 @@ public class Taxi {
                 if(taxiResponse.getTaxiInfoList() != null){
                     //There are other taxis in the network, the current taxi notifies them
                     //that it has been succesfully added to the network
+                    //The message to send is created only once
+                    TaxiInfoMsg newTaxiMsg = TaxiInfoMsg.newBuilder()
+                            .setId(taxiInfo.getId())
+                            .setAddress(taxiInfo.getAddress())
+                            .setPort(taxiInfo.getPort())
+                            .setPosition(Ride.PositionMsg.newBuilder()
+                                                        .setX(position.getY())
+                                                        .setY(position.getY())
+                                                        .build())
+                            .build();
                     for (TaxiInfo otherTaxiInfo : taxiResponse.getTaxiInfoList()) {
                         Taxi other = new Taxi(otherTaxiInfo);
                         getTaxisList().add(other);          // The taxi's list is updated
-
                         System.out.print("Taxis present : " + otherTaxiInfo.getId() + "\n");
-                        TaxiInfoMsg newTaxiMsg = TaxiInfoMsg.newBuilder()
-                                .setId(otherTaxiInfo.getId())
-                                .setAddress(otherTaxiInfo.getAddress())
-                                .setPort(otherTaxiInfo.getPort())
-                                .build();
                         // The taxi notifies the others that it is now part of the network
-                        notifyOtherTaxi(newTaxiMsg, this, other);
+                        notifyOtherTaxi(newTaxiMsg, other);
                     }
                 }
-
+                getTaxisList().add(this);           //The taxi's list now contains itself
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
                 System.out.print(e.getMessage() + "\n");
@@ -119,7 +128,7 @@ public class Taxi {
 
         while (true) {
             try {
-                addStatsToQueue();
+                //addStatsToQueue();
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -165,8 +174,8 @@ public class Taxi {
     }
 
     public void initThreads(){
-        grpcServerThread = new GRPCServerThread(taxiInfo);
-        exitThread = new StdInputThread(taxiInfo);
+        grpcServerThread = new GRPCServerThread(this);
+        exitThread = new ExitThread(this);
         statsThread = new StatsThread(this);
     }
 
@@ -260,24 +269,16 @@ public class Taxi {
 
     /* The taxi acts as a client and notifies the other taxis that it has been
     * added to the network. */
-    public void notifyOtherTaxi(TaxiInfoMsg request , Taxi current, Taxi other) throws InterruptedException {
+    public void notifyOtherTaxi(TaxiInfoMsg request , Taxi other) throws InterruptedException {
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getTaxiInfo().getAddress()+":" + other.getTaxiInfo().getPort()).usePlaintext().build();
 
         TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
 
-        stub.newTaxi(request, new StreamObserver<Empty>() {
+        stub.addTaxi(request, new StreamObserver<Empty>() {
             @Override
             public void onNext(Empty value) {
-                //Adds the new taxi to the other one
-                other.getTaxisList().add(current);
-                other.getTaxisList().get(other.getTaxisList().indexOf(current))
-                        .setPosition(new Position(request.getPosition().getX(), request.getPosition().getY()));
-                //addNewTaxiToList(request);
-                System.out.println("taxi " + taxiInfo.getId() + " list : \n");
-                for (Taxi taxi : taxisList)
-                    System.out.print(taxi.getTaxiInfo().getId() +  ";");
-
-                System.out.println("\n");
+                // The current taxi correctly notified the others
+                System.out.println("Other taxis correctly reached. Taxi " + taxiInfo.getId() + " list : " + printTaxiList());
             }
 
             @Override
@@ -293,10 +294,22 @@ public class Taxi {
         channel.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    public synchronized void addNewTaxiToList(TaxiInfoMsg taxiInfoMsg){
-        Position newTaxiPosition = new Position(taxiInfoMsg.getPosition().getX(), taxiInfoMsg.getPosition().getY());
-        TaxiInfo newTaxi = new TaxiInfo(taxiInfoMsg.getId(), taxiInfoMsg.getPort(), taxiInfoMsg.getAddress());
-        //getTaxisList().add(newTaxi);
+    public synchronized void addNewTaxiToList(Taxi taxi){
+        taxisList.add(taxi);
+    }
+
+    public synchronized void removeTaxiFromList(String id) throws TaxiNotFoundException {
+        int index = -1;
+
+        for (Taxi t : getTaxisList()){
+            if (t.getTaxiInfo().getId().equals(id))
+                index = getTaxisList().indexOf(t);
+        }
+
+        if (index == -1)
+            throw new TaxiNotFoundException();
+        else
+            taxisList.remove(index);
     }
 
     public void startElection(){
@@ -342,4 +355,13 @@ public class Taxi {
         this.batteryLevel = batteryLevel;
     }
 
+    public String printTaxiList(){
+        ArrayList<Taxi> taxis = new ArrayList<>(getTaxisList());
+        StringBuilder s = new StringBuilder();
+        for (Taxi t : taxis){
+            s.append(t.getTaxiInfo().getId() + " ");
+        }
+
+        return s.toString();
+    }
 }
