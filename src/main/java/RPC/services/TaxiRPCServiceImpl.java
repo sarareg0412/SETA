@@ -54,12 +54,12 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
             Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
             double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
             if (distance == request.getDistance() ){
-                if (request.getId().compareToIgnoreCase(TaxiUtils.getInstance().getTaxiInfo().getId()) > 0 ){
-                    //Requesting taxi has higher id, returns ok
-                    response = OKElection.newBuilder().setOk("OK").build();
-                }else {
+                if (request.getId().compareToIgnoreCase(TaxiUtils.getInstance().getTaxiInfo().getId()) < 0){
                     //Requesting taxi has lesser id, returns KO
                     response =  OKElection.newBuilder().setOk("KO").build();
+                }else {
+                    //Requesting taxi has higher id or is the same one who sent the request, returns ok
+                    response = OKElection.newBuilder().setOk("OK").build();
                 }
             }else {
                 if (distance < request.getDistance() ){
@@ -75,5 +75,6 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
             response = OKElection.newBuilder().setOk("OK").build();
         }
         responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 }

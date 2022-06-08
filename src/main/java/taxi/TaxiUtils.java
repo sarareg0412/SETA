@@ -16,6 +16,7 @@ public class TaxiUtils {
 
     private boolean isAvailable;                        // Taxi is available to take the ride
     private boolean isCharging;                         // Taxi is currently recharging
+    private boolean isElected;                          // Taxi is elected and can take the rida
 
     private static TaxiUtils instance;
 
@@ -91,5 +92,13 @@ public class TaxiUtils {
 
     public void setCharging(boolean charging) {
         isCharging = charging;
+    }
+
+    public synchronized boolean isElected() {
+        return isElected;
+    }
+
+    public synchronized void setElected(boolean elected) {
+        isElected = elected;
     }
 }

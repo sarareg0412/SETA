@@ -21,6 +21,7 @@ public class Utils {
                                                  "seta/smartcity/rides/district3",
                                                  "seta/smartcity/rides/district4"};
     public static final int cellsNumber = 10;
+    public static final int MAX_BATTERY = 100;
     public static Position[] rechargeStations = {  new Position(0,0),
                                                 new Position(0,9),
                                                 new Position(9,0),

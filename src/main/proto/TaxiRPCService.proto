@@ -23,7 +23,7 @@ message OKElection{
 }
 
 service TaxiRPCService {
-  rpc addTaxi(TaxiInfoMsg) returns (stream google.protobuf.Empty);
+  rpc addTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
   rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
   rpc startElection(ElectionMessage) returns (OKElection);
 }

@@ -19,6 +19,7 @@ import taxi.modules.ExitThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
+import utils.Position;
 import utils.Utils;
 
 import unimi.dps.ride.RideOuterClass.Ride;
@@ -67,13 +68,8 @@ public class Taxi {
                 // The taxi requests to join the network
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
                 System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
-                taxiUtils = TaxiUtils.getInstance();
-                taxiUtils.setTaxiInfo(taxiInfo);
-                taxiUtils.setPosition(taxiResponse.getPosition());
-
+                initTaxiUtils(taxiResponse.getPosition());
                 initThreads();
-
-
 
                 if(taxiResponse.getTaxiInfoList() != null){
                     //There are other taxis in the network, the current taxi notifies them
@@ -114,7 +110,7 @@ public class Taxi {
         } catch (MqttException e) {
             e.printStackTrace();
         }
-        exitThread.start();
+        exitThread.start();             // Start thread to exit in a controlled way
 
         while (true) {
             try {
@@ -163,9 +159,18 @@ public class Taxi {
         });
     }
 
+    public void initTaxiUtils(Position position){
+        taxiUtils = TaxiUtils.getInstance();
+        taxiUtils.setTaxiInfo(taxiInfo);
+        taxiUtils.setPosition(position);
+        taxiUtils.setBatteryLevel(Utils.MAX_BATTERY);       // Taxi initialized with max battery
+        taxiUtils.setAvailable(true);                       // Taxi is set available to take rides
+        taxiUtils.setCharging(false);                       // Taxi is not recharging
+    }
+
     public void initThreads(){
         grpcServerThread = new GRPCServerThread();
-        grpcServerThread.start();
+        grpcServerThread.start();                           // RPC thread started
         exitThread = new ExitThread();
         statsThread = new StatsThread();
     }
@@ -296,7 +301,7 @@ public class Taxi {
                     .setRide(ride)
                     .build();
             for (Taxi otherTaxi : TaxiUtils.getInstance().getTaxisList()) {
-                // The taxi notifies reaches the others to see if they are available to pick the ride
+                // The taxi broadcasts the others and itself to see to pick the master taxi to take the ride
                 reachOtherTaxis(electionMessage, otherTaxi.taxiInfo);
             }
         }
@@ -309,7 +314,9 @@ public class Taxi {
         stub.startElection(electionMessage, new StreamObserver<OKElection>() {
             @Override
             public void onNext(OKElection value) {
-
+                //If the taxi receives at least a KO, it's not elected
+                if (value.getOk().equals("KO"))
+                    taxiUtils.setElected(false);
             }
 
             @Override
@@ -319,9 +326,16 @@ public class Taxi {
 
             @Override
             public void onCompleted() {
-
+                if (taxiUtils.isElected()){
+                    // The taxi got OK from all other taxis, it takes the ride now
+                    System.out.println("> Taxi " + taxiInfo.getId() + " takes the ride now.");
+                }else {
+                    //Put request in a queue
+                }
             }
         });
+
+
     }
 
 
