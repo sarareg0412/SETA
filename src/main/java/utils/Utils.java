@@ -8,6 +8,7 @@ import taxi.Taxi;
 import unimi.dps.ride.RideOuterClass;
 
 import javax.ws.rs.HttpMethod;
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class Utils {
@@ -22,6 +23,10 @@ public class Utils {
                                                  "seta/smartcity/rides/district4"};
     public static final int cellsNumber = 10;
     public static final int MAX_BATTERY = 100;
+    public static final int SLIDING_WINDOWS_BUFFER_LENGTH = 8;
+    public static final double OVERLAP = 0.5;
+    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+
     public static Position[] rechargeStations = {  new Position(0,0),
                                                 new Position(0,9),
                                                 new Position(9,0),

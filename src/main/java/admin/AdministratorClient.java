@@ -13,12 +13,10 @@ import javax.ws.rs.HttpMethod;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.text.DecimalFormat;
 
 public class AdministratorClient {
     private static Client client = Client.create();
     private static BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));;
-    private static final DecimalFormat df = new DecimalFormat("0.00");
 
     public static void main(String[] argv){
 
@@ -145,10 +143,11 @@ public class AdministratorClient {
             avgPollution += stat.getAirPollutionLev().stream().mapToDouble(i ->i).sum() / stat.getAirPollutionLev().size();
             avgRides += stat.getCompletedRides();
         }
+
         System.out.println("> Statistics averages:");
-        System.out.println("> " + df.format(avgKm/size) + " km driven;" +
-                                  df.format(avgBattery/size) + "% battery; " +
-                                  df.format(avgPollution/size) + " pollution level;" +
-                                  df.format(avgRides/size) + " rides completed.");
+        System.out.println("> " + Utils.DECIMAL_FORMAT.format(avgKm/size) + " km driven;" +
+                                  Utils.DECIMAL_FORMAT.format(avgBattery/size) + "% battery; " +
+                                  Utils.DECIMAL_FORMAT.format(avgPollution/size) + " pollution level;" +
+                                  Utils.DECIMAL_FORMAT.format(avgRides/size) + " rides completed.");
     }
 }

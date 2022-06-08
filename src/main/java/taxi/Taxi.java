@@ -12,6 +12,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
+import simulator.MeasurementsBuffer;
+import simulator.PM10Simulator;
 import statistics.Stats;
 import taxi.modules.GRPCServerThread;
 import taxi.modules.StatsThread;
@@ -41,6 +43,7 @@ public class Taxi {
     private String districtTopic;
     private int qos;
 
+    private PM10Simulator pm10Simulator;
     //Threads
     private GRPCServerThread grpcServerThread;
     private StatsThread statsThread;
@@ -67,7 +70,7 @@ public class Taxi {
             try {
                 // The taxi requests to join the network
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
-                System.out.print("Taxi added with position: " + taxiResponse.getPosition() + "\n");
+                System.out.print("> Taxi added with position: " + taxiResponse.getPosition() + "\n");
                 initTaxiUtils(taxiResponse.getPosition());
                 initThreads();
 
@@ -87,7 +90,7 @@ public class Taxi {
                     for (TaxiInfo otherTaxiInfo : taxiResponse.getTaxiInfoList()) {
                         Taxi other = new Taxi(otherTaxiInfo);
                         taxiUtils.addNewTaxiToList(other);          // The taxi's list is updated
-                        System.out.print("Taxi present : " + otherTaxiInfo.getId() + "\n");
+                        System.out.print("> Taxi present : " + otherTaxiInfo.getId() + "\n");
                         // The taxi notifies the others that it is now part of the network
                         notifyOtherTaxi(newTaxiMsg, otherTaxiInfo);
                     }
@@ -104,7 +107,9 @@ public class Taxi {
         try {
             initMqttComponents();
             MQTTClient.subscribe(districtTopic, qos);
-            System.out.print("Taxi subscribed to district : " + districtTopic + "\n");
+            System.out.print("> Taxi subscribed to district : " + districtTopic + "\n");
+            // Start to acquire pollution levels from sensor
+            pm10Simulator.start();
             // Start to send statistics as soon as the taxi is subscribed to the district's topic
             statsThread.start();
         } catch (MqttException e) {
@@ -173,6 +178,7 @@ public class Taxi {
         grpcServerThread.start();                           // RPC thread started
         exitThread = new ExitThread();
         statsThread = new StatsThread();
+        pm10Simulator = new PM10Simulator(new MeasurementsBuffer());
     }
 
     public void initTaxi(){
@@ -181,7 +187,7 @@ public class Taxi {
         boolean check = true;
 
         while(check) {
-            System.out.print("Insert Taxi ID: \n");
+            System.out.print("> Insert Taxi ID: \n");
 
             try {
 
@@ -189,39 +195,39 @@ public class Taxi {
                 if (!taxiInfo.getId().equals(""))
                     check = false;
                 else
-                    System.out.print("Please insert a valid ID. \n");
+                    System.out.print("> Please insert a valid ID. \n");
 
             }catch (Exception e){
-                System.out.println("An error occurred. Please insert a value\n");
+                System.out.println("> An error occurred. Please insert a value\n");
             }
         }
 
         check = true;
 
         while(check) {
-            System.out.print("Insert port number: \n");
+            System.out.print("> Insert port number: \n");
 
             try {
                 taxiInfo.setPort(Integer.parseInt(inFromUser.readLine()));
                 check = false;
             }catch (Exception e){
-                System.out.println("Not a number. Please insert Integer Value\n");
+                System.out.println("> Not a number. Please insert Integer Value\n");
             }
         }
 
         check = true;
 
         while(check) {
-            System.out.print("Insert address: \n");
+            System.out.print("> Insert address: \n");
 
             try {
                 taxiInfo.setAddress(inFromUser.readLine());
                 if (!taxiInfo.getAddress().equals(""))
                     check = false;
                 else
-                    System.out.print("Please insert a valid address. \n");
+                    System.out.print("> Please insert a valid address. \n");
             }catch (Exception e){
-                System.out.println("An error occurred. Please insert a value\n");
+                System.out.println("> An error occurred. Please insert a value\n");
             }
         }
     }
@@ -245,7 +251,7 @@ public class Taxi {
             //Taxi already added
             throw new TaxiAlreadyPresentException();
         }else {
-            throw new Exception("Status code: "+ statusInfo);
+            throw new Exception("> Status code: "+ statusInfo);
         }
 
         return taxiResponse;
@@ -258,7 +264,7 @@ public class Taxi {
         try {
             return webResource.type("application/json").post(ClientResponse.class, input);
         } catch (ClientHandlerException e) {
-            System.out.println("Service unavailable");
+            System.out.println("> Service unavailable");
             return null;
         }
     }
@@ -274,7 +280,7 @@ public class Taxi {
             @Override
             public void onNext(Empty value) {
                 // The current taxi correctly notified the others
-                System.out.println("Other taxis correctly reached. Taxi " + taxiInfo.getId() + " list : " + Utils.printTaxiList(taxiUtils.getTaxisList()));
+                System.out.println("> Other taxis correctly reached. Taxi " + taxiInfo.getId() + " list : " + Utils.printTaxiList(taxiUtils.getTaxisList()));
             }
 
             @Override
@@ -334,10 +340,7 @@ public class Taxi {
                 }
             }
         });
-
-
     }
-
 
     public void addStatsToQueue(){
         Stats stats = new Stats();

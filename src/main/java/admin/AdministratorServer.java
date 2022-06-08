@@ -13,7 +13,7 @@ public class AdministratorServer{
         HttpServer httpServer = HttpServerFactory.create(Utils.servicesAddress);
         httpServer.start();
 
-        System.out.println("Administrator Server running!");
+        System.out.println("> Administrator Server running!");
     }
 
     public static void initialize(){

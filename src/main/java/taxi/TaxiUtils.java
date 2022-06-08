@@ -2,6 +2,7 @@ package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
 import utils.Position;
+import utils.Queue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ public class TaxiUtils {
     private List<Taxi> taxisList;                       // List of other taxis
     private int batteryLevel;                           // Taxi's battery level
     private Position position;                          // Taxi's position
+    private Queue<Double> measurementAvgQueue;     // Queue of the measurement's averages
 
     private boolean isAvailable;                        // Taxi is available to take the ride
     private boolean isCharging;                         // Taxi is currently recharging
@@ -23,6 +25,7 @@ public class TaxiUtils {
     public TaxiUtils() {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
+        measurementAvgQueue = new Queue<>();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -100,5 +103,13 @@ public class TaxiUtils {
 
     public synchronized void setElected(boolean elected) {
         isElected = elected;
+    }
+
+    public void addAvgToQueue(double avg){
+        measurementAvgQueue.put(avg);
+    }
+
+    public ArrayList<Double> getMeasurementAvgQueue() {
+        return measurementAvgQueue.getAllAndEmptyQueue();
     }
 }

@@ -1,28 +1,26 @@
 package taxi.modules;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import statistics.Stats;
-import statistics.StatsQueue;
-import taxi.Taxi;
 import taxi.TaxiUtils;
+import utils.Queue;
 import utils.Utils;
 
 import java.sql.Timestamp;
-import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class StatsThread extends Thread{
-    private StatsQueue statsQueue;
+    private Queue<Stats> statsQueue;
     private Client client = Client.create();
 
     public StatsThread() {
-        statsQueue = new StatsQueue();
+        statsQueue = new Queue<Stats>();
     }
 
     @Override
@@ -53,22 +51,18 @@ public class StatsThread extends Thread{
         Stats stats = new Stats();
         double km = 0.0;
         ArrayList<Double> pollution = new ArrayList<>();
-        for (Stats s : statsList){
-            pollution.add(s.getKmDriven());
-            km += s.getKmDriven();
-        }
 
         stats.setKmDriven(km);
         stats.setCompletedRides(statsList.size());
         stats.setTaxiId(TaxiUtils.getInstance().getTaxiInfo().getId());
         stats.setBattery(TaxiUtils.getInstance().getBatteryLevel());
         stats.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
-        stats.setAirPollutionLev(pollution);
+        stats.setAirPollutionLev(TaxiUtils.getInstance().getMeasurementAvgQueue());
 
         return stats;
     }
 
-    public StatsQueue getStatsQueue() {
+    public Queue<Stats> getStatsQueue() {
         return statsQueue;
     }
 

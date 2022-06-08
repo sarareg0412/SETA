@@ -1,5 +1,6 @@
 package statistics;
 
+import simulator.Measurement;
 import taxi.TaxiInfo;
 
 import javax.xml.bind.annotation.XmlRootElement;
