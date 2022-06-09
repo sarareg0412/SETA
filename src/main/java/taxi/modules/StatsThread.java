@@ -49,15 +49,13 @@ public class StatsThread extends Thread{
     /* Computing the statistics to send to the server*/
     private Stats computeStats(List<Stats> statsList){
         Stats stats = new Stats();
-        double km = 0.0;
-        ArrayList<Double> pollution = new ArrayList<>();
 
-        stats.setKmDriven(km);
+        stats.setKmDriven(statsList.stream().mapToDouble(Stats::getKmDriven).sum());
         stats.setCompletedRides(statsList.size());
         stats.setTaxiId(TaxiUtils.getInstance().getTaxiInfo().getId());
         stats.setBattery(TaxiUtils.getInstance().getBatteryLevel());
-        stats.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
         stats.setAirPollutionLev(TaxiUtils.getInstance().getMeasurementAvgQueue());
+        stats.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
 
         return stats;
     }

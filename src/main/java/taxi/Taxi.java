@@ -28,6 +28,7 @@ import unimi.dps.ride.RideOuterClass.Ride;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.concurrent.TimeUnit;
@@ -195,8 +196,10 @@ public class Taxi {
                 if (!taxiInfo.getId().equals(""))
                     check = false;
                 else
-                    System.out.print("> Please insert a valid ID. \n");
+                    throw new IOException();
 
+            }catch (IOException e){
+                System.out.print("> Please insert a valid ID. \n");
             }catch (Exception e){
                 System.out.println("> An error occurred. Please insert a value\n");
             }
@@ -208,8 +211,12 @@ public class Taxi {
             System.out.print("> Insert port number: \n");
 
             try {
-                taxiInfo.setPort(Integer.parseInt(inFromUser.readLine()));
-                check = false;
+                String s = inFromUser.readLine();
+                if (!s.equals("")){
+                    taxiInfo.setPort(Integer.parseInt(s));
+                    check = false;
+                }else
+                    throw new IOException();
             }catch (Exception e){
                 System.out.println("> Not a number. Please insert Integer Value\n");
             }
@@ -225,7 +232,10 @@ public class Taxi {
                 if (!taxiInfo.getAddress().equals(""))
                     check = false;
                 else
-                    System.out.print("> Please insert a valid address. \n");
+                    throw new IOException();
+
+            }catch (IOException e){
+                System.out.print("> Please insert a valid address. \n");
             }catch (Exception e){
                 System.out.println("> An error occurred. Please insert a value\n");
             }

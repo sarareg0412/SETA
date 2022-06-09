@@ -1,7 +1,7 @@
 package exceptions.taxi;
 
 public class TaxiNotFoundException extends Exception {
-    private String message = "> Taxi not found in the network";
+    private String message = "> Taxi not found in the network.";
 
     public TaxiNotFoundException(){
     }

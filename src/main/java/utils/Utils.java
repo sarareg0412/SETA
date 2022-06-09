@@ -8,7 +8,11 @@ import taxi.Taxi;
 import unimi.dps.ride.RideOuterClass;
 
 import javax.ws.rs.HttpMethod;
+import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class Utils {
@@ -106,4 +110,15 @@ public class Utils {
 
         return s.toString();
     }
+
+    public static boolean isTimestampValid(String s){
+        SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+        try{
+            Date date = format.parse(s);
+            return true;
+        }catch(ParseException e) {
+            return false;
+        }
+    }
+
 }

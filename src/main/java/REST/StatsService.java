@@ -35,7 +35,7 @@ public class StatsService {
         }
     }
 
-    /* Return the list of the statistics of a taxi  */
+    /* Return the list of the N statistics of a taxi  */
     @Path("getLastNTaxiStats/{id}/{n}")
     @GET
     @Produces({"application/json", "application/xml"})
@@ -47,5 +47,14 @@ public class StatsService {
             //Taxi not found
             return Response.status(Response.Status.NOT_FOUND).build();
         }
+    }
+
+    /* Return the list of the statistics of a taxi  */
+    @Path("getStatsBwTimestamps/{t1}/{t2}")
+    @GET
+    @Produces({"application/json", "application/xml"})
+    public Response getStatsBwTimestamps(@PathParam("t1") String t1, @PathParam("t2") String t2){
+        StatsResponse response = new StatsResponse(Statistics.getInstance().getStatsBwTimestamps(t1,t2));
+        return Response.ok(response).build();
     }
 }

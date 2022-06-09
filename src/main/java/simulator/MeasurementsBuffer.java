@@ -44,14 +44,7 @@ public class MeasurementsBuffer implements Buffer{
         // The list of measurements is retrieved in a controlled way, then
         // the average of the measurements is computed and added to the Queue
         List<Measurement> list = readAllAndClean();
-        double avg = 0.0;
-        StringBuilder s = new StringBuilder();
-        for (Measurement m : list){
-            avg += m.getValue();
-            s.append(Utils.DECIMAL_FORMAT.format(m.getValue())).append(";");
-        }
-
-        System.out.println("> WINDOW: " + s + " AVG: " + avg/Utils.SLIDING_WINDOWS_BUFFER_LENGTH);
-        TaxiUtils.getInstance().addAvgToQueue(avg/Utils.SLIDING_WINDOWS_BUFFER_LENGTH);
+        double avg = list.stream().mapToDouble(Measurement::getValue).average().orElse(0.0);
+        TaxiUtils.getInstance().addAvgToQueue(avg);
     }
 }

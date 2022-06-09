@@ -61,6 +61,24 @@ public class Statistics {
         return new ArrayList<>(listCopy.subList( 0, n));
     }
 
+    public List<Stats> getStatsBwTimestamps(String t1, String t2){
+        t1 = t1.replace("_", " ");
+        t2 = t2.replace("_", " ");
+        HashMap<String, List<Stats>> mapCopy = getStatsHashMap();     // This is synchronized
+        List<Stats> list = new ArrayList<>();
+        // Scan all sets
+        for (String id : mapCopy.keySet()){
+            // Scan all lists for the taxi
+            for (Stats s : mapCopy.get(id)){
+                if (s.getTimestamp().compareToIgnoreCase(t1) >= 0 &&
+                        s.getTimestamp().compareToIgnoreCase(t2) <= 0)
+                    list.add(s);
+            }
+        }
+
+        return list;
+    }
+
     public synchronized HashMap<String, List<Stats>> getStatsHashMap() {
         return statsHashMap;
     }

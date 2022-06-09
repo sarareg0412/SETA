@@ -32,9 +32,11 @@ public class StatsResponse {
     public String toString() {
         StringBuilder str= new StringBuilder();
         List<Stats> stats = statsList;
-        str.append("Taxi ").append(stats.get(0).getTaxiId()).append(" :").append("\n");
-        for (Stats stat : statsList){
-            str.append(stat.toString()).append("\n");
+        if(stats.size() > 0){
+            str.append("Taxi ").append(stats.get(0).getTaxiId()).append(" :").append("\n");
+            for (Stats stat : statsList){
+                str.append(stat.toString()).append("\n");
+            }
         }
         return str.toString();
     }

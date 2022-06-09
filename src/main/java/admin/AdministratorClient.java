@@ -13,6 +13,7 @@ import javax.ws.rs.HttpMethod;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class AdministratorClient {
     private static Client client = Client.create();
@@ -24,13 +25,17 @@ public class AdministratorClient {
             boolean check = true;
             int n = 0;
             while (check) {
-                System.out.println("\n> Select the service you want to ask for:");
+                System.out.println("\n\n> Select the service you want to ask for:");
                 System.out.println("> [1] Print the list of the taxis currently in the network");
                 System.out.println("> [2] Print the average of n statistics of a Taxi currently in the network");
                 System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps");
                 try {
-                    n = Integer.parseInt(inFromUser.readLine());
-                    check = false;
+                    String s = inFromUser.readLine();
+                    if (!s.equals("")){
+                        n = Integer.parseInt(s);
+                        check = false;
+                    }else
+                        throw new IOException();
                 } catch (IOException e) {
                     System.out.print("> Please insert a valid number.\n");
                     e.printStackTrace();
@@ -53,6 +58,13 @@ public class AdministratorClient {
             case 2:
                 try {
                     printTaxiStats();
+                } catch (Exception e) {
+                    System.out.print(e.getMessage());
+                }
+                break;
+            case 3:
+                try {
+                    printTimestampStats();
                 } catch (Exception e) {
                     System.out.print(e.getMessage());
                 }
@@ -93,8 +105,11 @@ public class AdministratorClient {
                 if (!id.equals(""))
                     check = false;
                 else
+                    throw new IOException();
+
+            }catch (IOException e){
                     System.out.print("> Please insert a valid ID. \n");
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.out.println("> An error occurred. Please insert a value\n");
             }
         }
@@ -104,10 +119,16 @@ public class AdministratorClient {
         while (check) {
             System.out.println("\n> How many statistics would you like to check? ");
             try {
-                n = Integer.parseInt(inFromUser.readLine());
-                check = false;
+                String s = inFromUser.readLine();
+                if (!s.equals("")){
+                    n = Integer.parseInt(s);
+                    check = false;
+                }else
+                    throw new IOException();
             } catch (IOException e) {
-               System.out.print("> Please insert a valid number. \n");
+                System.out.print("> Please insert a valid number.\n");
+            } catch (Exception e) {
+               System.out.print("> An Error occurred. Please insert a number. \n");
             }
         }
 
@@ -119,35 +140,90 @@ public class AdministratorClient {
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
             response = clientResponse.getEntity(StatsResponse.class);
             if (response.getStatsList() != null){
-                computeAverage(response);
+                computeAverage(response.getStatsList());
             }else
                 System.out.print("> There are no statistics for the taxi "+ id +" yet.\n");
         } else if (ClientResponse.Status.NOT_FOUND.getStatusCode() == statusInfo) {
             //The taxi specified does not exist
-            throw new TaxiNotFoundException(". No stats found for taxi " + id +".");
+            throw new TaxiNotFoundException("No stats found for taxi " + id +".");
         }else {
             throw new Exception("> Status code: "+ statusInfo);
         }
     }
 
-    public static void computeAverage(StatsResponse response){
-        double avgKm = 0.0;
-        double avgBattery = 0;
-        double avgPollution = 0.0;
-        double avgRides = 0.0;
-        int size = response.getStatsList().size();
+    public static void printTimestampStats() throws Exception {
+        boolean check = true;
+        String t1="", t2 ="";
 
-        for (Stats stat : response.getStatsList()){
-            avgKm += stat.getKmDriven();
-            avgBattery += stat.getBattery();
-            avgPollution += stat.getAirPollutionLev().stream().mapToDouble(i ->i).sum() / stat.getAirPollutionLev().size();
-            avgRides += stat.getCompletedRides();
+        while (check) {
+            System.out.println("\n> Insert the first timestamp [format: yyyy-mm-dd HH:mm]");
+            try {
+                t1 = inFromUser.readLine();
+                if (Utils.isTimestampValid(t1)) {
+                    check = false;
+                }else
+                    throw new IOException();
+
+            }catch (IOException e){
+                System.out.print("> Timestamp not valid. Please insert a valid timestamp.");
+            } catch (Exception e) {
+                System.out.println("> An error occurred. Please insert a timestamp");
+            }
         }
 
+        check = true;
+        while (check) {
+            System.out.println("\n> Insert the second timestamp [format: yyyy-mm-dd HH:mm]");
+            try {
+                t2 = inFromUser.readLine();
+                if (Utils.isTimestampValid(t2)) {
+                    check = false;
+                }else
+                    throw new IOException();
+
+            }catch (IOException e){
+                System.out.print("> Timestamp not valid. Please insert a valid timestamp.");
+            } catch (Exception e) {
+                System.out.println("> An error occurred. Please insert a timestamp");
+            }
+        }
+
+        String path = Utils.servicesAddress + Utils.statsServicePath + "/getStatsBwTimestamps/" + t1.replace(' ', '_') +"/"+ t2.replace(' ', '_');
+        ClientResponse clientResponse = Utils.sendRequest(client, path, HttpMethod.GET);
+        int statusInfo = clientResponse.getStatus();
+
+        StatsResponse response;
+        if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
+            response = clientResponse.getEntity(StatsResponse.class);
+            if (response.getStatsList() != null){
+                computeAverage(response.getStatsList());
+            }else
+                System.out.print("> There are no statistics between "+ t1 +" and "+ t2 +" yet.\n");
+        }else {
+            throw new Exception("> An error occurred. Status code: "+ statusInfo);
+        }
+
+    }
+
+    public static void computeAverage(List<Stats> statsList){
+
+        double avgKm = statsList.stream().mapToDouble(Stats::getKmDriven).average().orElse(0.0);;
+        double avgBattery = statsList.stream().mapToDouble(Stats::getBattery).average().orElse(0.0);
+        double avgRides = statsList.stream().mapToDouble(Stats::getCompletedRides).average().orElse(0.0);
+        /* First every stat list's of pollution levels average is computed, then the average of these is also computed */
+        double avgPollution = statsList.stream()
+                                        .mapToDouble(
+                                            value -> value.getAirPollutionLev()
+                                                            .stream()
+                                                            .mapToDouble(Double::doubleValue)
+                                                            .average().orElse(0.0)
+                                        ).average().orElse(0.0);
+
+
         System.out.println("> Statistics averages:");
-        System.out.println("> " + Utils.DECIMAL_FORMAT.format(avgKm/size) + " km driven;" +
-                                  Utils.DECIMAL_FORMAT.format(avgBattery/size) + "% battery; " +
-                                  Utils.DECIMAL_FORMAT.format(avgPollution/size) + " pollution level;" +
-                                  Utils.DECIMAL_FORMAT.format(avgRides/size) + " rides completed.");
+        System.out.println("> " + Utils.DECIMAL_FORMAT.format(avgKm) + " average km driven; " +
+                                  Utils.DECIMAL_FORMAT.format(avgBattery) + "% average battery; " +
+                                  Utils.DECIMAL_FORMAT.format(avgPollution) + " average pollution level; " +
+                                  Utils.DECIMAL_FORMAT.format(avgRides) + " rides completed.");
     }
 }
