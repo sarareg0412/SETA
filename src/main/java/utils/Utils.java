@@ -8,7 +8,6 @@ import taxi.Taxi;
 import unimi.dps.ride.RideOuterClass;
 
 import javax.ws.rs.HttpMethod;
-import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -119,6 +118,10 @@ public class Utils {
         }catch(ParseException e) {
             return false;
         }
+    }
+
+    public static boolean moreThanEqual(String t1, String t2){
+        return t1.compareToIgnoreCase(t2) <= 0;
     }
 
 }

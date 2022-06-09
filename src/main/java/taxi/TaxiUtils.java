@@ -3,6 +3,7 @@ package taxi;
 import exceptions.taxi.TaxiNotFoundException;
 import utils.Position;
 import utils.Queue;
+import utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -111,5 +112,9 @@ public class TaxiUtils {
 
     public ArrayList<Double> getMeasurementAvgQueue() {
         return measurementAvgQueue.getAllAndEmptyQueue();
+    }
+
+    public boolean isInTheSameDistrict(Position position){
+        return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
     }
 }

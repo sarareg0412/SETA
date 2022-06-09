@@ -1,5 +1,7 @@
 package utils;
 
+import unimi.dps.ride.RideOuterClass;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
@@ -13,6 +15,11 @@ public class Position {
     public Position(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Position(RideOuterClass.Ride.PositionMsg positionMsg){
+        this.x = positionMsg.getX();
+        this.y = positionMsg.getY();
     }
 
     public int getX() {

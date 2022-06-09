@@ -176,7 +176,7 @@ public class AdministratorClient {
             System.out.println("\n> Insert the second timestamp [format: yyyy-mm-dd HH:mm]");
             try {
                 t2 = inFromUser.readLine();
-                if (Utils.isTimestampValid(t2)) {
+                if (Utils.isTimestampValid(t2) && Utils.moreThanEqual(t2, t1)) {
                     check = false;
                 }else
                     throw new IOException();
