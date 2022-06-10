@@ -1,21 +1,32 @@
 package taxi.modules;
 
-import statistics.Stats;
-import taxi.Taxi;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import taxi.TaxiInfo;
-import taxi.TaxiNetwork;
-
-import java.util.ArrayList;
+import unimi.dps.taxi.TaxiRPCServiceGrpc;
+import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 
 public class ElectionThread extends Thread{
-    public TaxiNetwork electionNetwork;
 
-    public ElectionThread(){
-        electionNetwork = new TaxiNetwork();
+    TaxiInfo otherTaxiInfo;
+    ElectionMessage electionMessage;
+
+    public ElectionThread(TaxiInfo otherTaxiInfo, ElectionMessage electionMessage) {
+        this.otherTaxiInfo = otherTaxiInfo;
+        this.electionMessage = electionMessage;
     }
 
     @Override
     public void run() {
-        super.run();
+
+        reachOtherTaxi(otherTaxiInfo, electionMessage);
+    }
+
+
+    private void reachOtherTaxi(TaxiInfo other, ElectionMessage electionMessage){
+        final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
+        TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
+
+        OKElection response = stub.startElection(electionMessage);
     }
 }

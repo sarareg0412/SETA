@@ -15,6 +15,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import simulator.MeasurementsBuffer;
 import simulator.PM10Simulator;
 import statistics.Stats;
+import taxi.modules.ElectionThread;
 import taxi.modules.GRPCServerThread;
 import taxi.modules.StatsThread;
 import taxi.modules.ExitThread;
@@ -317,40 +318,14 @@ public class Taxi {
                     .setRide(ride)
                     .build();
             for (Taxi otherTaxi : TaxiUtils.getInstance().getTaxisList()) {
-                // The taxi broadcasts the others and itself to see to pick the master taxi to take the ride
-                reachOtherTaxis(electionMessage, otherTaxi.taxiInfo);
+                // A new thread is created for the taxi to broadcasts the others and
+                // itself to see to pick the master to take the ride
+                ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage);
+                electionThread.start();
             }
         }
     }
 
-    public void reachOtherTaxis(ElectionMessage electionMessage, TaxiInfo other){
-        final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
-        TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
-
-        stub.startElection(electionMessage, new StreamObserver<OKElection>() {
-            @Override
-            public void onNext(OKElection value) {
-                //If the taxi receives at least a KO, it's not elected
-                if (value.getOk().equals("KO"))
-                    taxiUtils.setElected(false);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-
-            }
-
-            @Override
-            public void onCompleted() {
-                if (taxiUtils.isElected()){
-                    // The taxi got OK from all other taxis, it takes the ride now
-                    System.out.println("> Taxi " + taxiInfo.getId() + " takes the ride now.");
-                }else {
-                    //Put request in a queue
-                }
-            }
-        });
-    }
 
     public void addStatsToQueue(){
         Stats stats = new Stats();
