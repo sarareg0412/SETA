@@ -1,6 +1,7 @@
 package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
+import ride.Ride;
 import utils.Position;
 import utils.Queue;
 import utils.Utils;
@@ -15,18 +16,23 @@ public class TaxiUtils {
     private List<Taxi> taxisList;                       // List of other taxis
     private int batteryLevel;                           // Taxi's battery level
     private Position position;                          // Taxi's position
-    private Queue<Double> measurementAvgQueue;     // Queue of the measurement's averages
+    private Queue<Double> measurementAvgQueue;          // Queue of the measurement's averages
+    private List<Ride> pendingRides;                        // List of pending rides
 
     private boolean isAvailable;                        // Taxi is available to take the ride
     private boolean isCharging;                         // Taxi is currently recharging
     private boolean isElected;                          // Taxi is elected and can take the rida
+
+    private int electionCounter;                        // Number of responses gotten for the election
+    private boolean isMaster;                           // Taxi is selected to take the ride
 
     private static TaxiUtils instance;
 
     public TaxiUtils() {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
-        measurementAvgQueue = new Queue<>();
+        this.measurementAvgQueue = new Queue<>();
+        this.pendingRides = new ArrayList<>();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -116,5 +122,33 @@ public class TaxiUtils {
 
     public boolean isInTheSameDistrict(Position position){
         return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
+    }
+
+    public synchronized int getElectionCounter() {
+        return electionCounter;
+    }
+
+    public synchronized void setElectionCounter(int electionCounter) {
+        this.electionCounter = electionCounter;
+    }
+
+    public synchronized List<Ride> getPendingRides() {
+        return pendingRides;
+    }
+
+    public synchronized void addPendingRide(Ride ride){
+        pendingRides.add(ride);
+    }
+
+    public synchronized void setPendingRides(List<Ride> pendingRides) {
+        this.pendingRides = pendingRides;
+    }
+
+    public boolean isMaster() {
+        return isMaster;
+    }
+
+    public void setMaster(boolean master) {
+        isMaster = master;
     }
 }

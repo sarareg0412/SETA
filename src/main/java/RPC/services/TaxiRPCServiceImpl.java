@@ -48,6 +48,7 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     @Override
     public void startElection(ElectionMessage request, StreamObserver<OKElection> responseObserver) {
         OKElection response;
+        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " participates to election for ride: " + request.getRide().getId());
         // Current taxi is not in the same district, sends back OK
         if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))){
             response = OKElection.newBuilder().setOk("OK").build();
@@ -57,8 +58,8 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                 Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
                 double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                 if (distance == request.getDistance() ){
-                    if (request.getId().compareToIgnoreCase(TaxiUtils.getInstance().getTaxiInfo().getId()) < 0){
-                        //Requesting taxi has lesser id, returns KO
+                    if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) < 0){
+                        //Requesting taxi has greater id, returns KO
                         response =  OKElection.newBuilder().setOk("KO").build();
                     }else {
                         //Requesting taxi has higher id or is the same one who sent the request, returns ok
@@ -78,6 +79,7 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                 response = OKElection.newBuilder().setOk("OK").build();
             }
         }
+        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " response to election: " + response);
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
