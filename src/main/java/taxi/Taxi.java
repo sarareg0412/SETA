@@ -12,6 +12,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
+import ride.Ride;
 import simulator.MeasurementsBuffer;
 import simulator.PM10Simulator;
 import statistics.Stats;
@@ -25,7 +26,7 @@ import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Position;
 import utils.Utils;
 
-import unimi.dps.ride.RideOuterClass.Ride;
+import unimi.dps.ride.Ride.*;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.BufferedReader;
@@ -85,7 +86,7 @@ public class Taxi {
                             .setId(taxiInfo.getId())
                             .setAddress(taxiInfo.getAddress())
                             .setPort(taxiInfo.getPort())
-                            .setPosition(Ride.PositionMsg.newBuilder()
+                            .setPosition(RideMsg.PositionMsg.newBuilder()
                                                         .setX(taxiUtils.getPosition().getY())
                                                         .setY(taxiUtils.getPosition().getY())
                                                         .build())
@@ -150,12 +151,12 @@ public class Taxi {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 String time = new Timestamp(System.currentTimeMillis()).toString();
-                Ride ride =  Ride.parseFrom(message.getPayload());
+                RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                 System.out.println("****************************NEW RIDE***********************************");
                 System.out.println("Message Arrived at Time: " + time + "  Topic: " + topic + "  Message: "
-                        + ride.toString());
+                        + rideMsg.toString());
                 System.out.println("***********************************************************************");
-                startElection(ride);
+                startElection(rideMsg);
             }
 
             @Override
@@ -306,9 +307,9 @@ public class Taxi {
         channel.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    public void startElection(Ride rideMsg){
+    public void startElection(RideMsg rideMsg) throws MqttException {
         //The message to send is created only once
-        ElectionMessage electionMessage = ElectionMessage.newBuilder()
+        ElectionMsg electionMessage = ElectionMsg.newBuilder()
                 .setId(taxiInfo.getId())
                 .setDistance(Utils.getDistanceBetweenPositions(taxiUtils.getPosition(),
                                                                 Utils.getPositionFromPositionMsg(rideMsg.getStart())))
@@ -343,24 +344,21 @@ public class Taxi {
 
         System.out.println("> Election finished");
         // The current taxi was elected by the others to take the ride
-
-        ride.Ride ride = new ride.Ride(rideMsg);
+        Ride ride = new Ride(rideMsg);
 
         // TODO this condition fails when you add a taxi before the election is completed
         if (TaxiUtils.getInstance().isMaster()){
             try {
                 System.out.println("> Taxi "+taxiInfo.getId()+" is taking the ride " + ride.getId());
                 takeRide(ride);
+                publishCompletedRide(rideMsg);
             } catch (MqttException e) {
                 System.out.print("> An error occurred while taking the ride. ");
             }
-        } else if (taxiUtils.getElectionCounter() == 0){
-            // No taxi was available to take the ride, ride is added to the list of pending rides
-            taxiUtils.addPendingRide(ride);
         }
     }
 
-    public void takeRide(ride.Ride ride) throws MqttException {
+    public void takeRide(Ride ride) throws MqttException {
         taxiUtils.setAvailable(false);
         try {
             Thread.sleep(5000);
@@ -380,6 +378,15 @@ public class Taxi {
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
         addStatsToQueue(ride.getKmToTravel());
         taxiUtils.setAvailable(true);
+    }
+
+    /* Sends back an mqtt message to SETA that the ride couldn't be taken by any taxi */
+    public void publishCompletedRide(RideMsg ride) throws MqttException {
+        //Seta starts creating the rides with a positive random id
+        MqttMessage msg = new MqttMessage(ride.toByteArray());
+        msg.setQos(qos);
+        MQTTClient.publish(Utils.rideCompletedTopic, msg);
+        System.out.print("Pending ride published:" + ride);
     }
 
     public void addStatsToQueue(double km){

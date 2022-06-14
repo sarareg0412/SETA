@@ -34,10 +34,7 @@ public class StatsThread extends Thread{
                 ClientResponse clientResponse = sendPOSTRequest(client, path, finalStat);
                 int statusInfo = clientResponse.getStatus();
 
-                if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
-                    //Stat correctly added
-                    System.out.println("Stats correctly added for taxi " + TaxiUtils.getInstance().getTaxiInfo().getId());
-                }else {
+                if (ClientResponse.Status.OK.getStatusCode() != statusInfo) {
                     System.out.println(clientResponse);
                 }
             } catch (InterruptedException e) {

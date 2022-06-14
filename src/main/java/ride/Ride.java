@@ -1,6 +1,6 @@
 package ride;
 
-import unimi.dps.ride.RideOuterClass;
+import unimi.dps.ride.Ride.*;
 import utils.Position;
 import utils.Utils;
 
@@ -12,7 +12,7 @@ public class Ride {
     public Ride() {
     }
 
-    public Ride(RideOuterClass.Ride rideMsg){
+    public Ride(RideMsg rideMsg){
         this.id = rideMsg.getId();
         this.start = new Position(rideMsg.getStart());
         this.finish = new Position(rideMsg.getFinish());
@@ -52,4 +52,17 @@ public class Ride {
         return Utils.getDistanceBetweenPositions(start,finish);
     }
 
+    public RideMsg createRideMsg(){
+        return RideMsg.newBuilder()
+                      .setId(id)
+                      .setStart(RideMsg.PositionMsg.newBuilder()
+                                                   .setX(start.getX())
+                                                   .setY(start.getY())
+                                                    .build())
+                      .setFinish(RideMsg.PositionMsg.newBuilder()
+                                                    .setX(finish.getX())
+                                                    .setY(finish.getY())
+                                                    .build())
+                      .build();
+    }
 }

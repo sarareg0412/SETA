@@ -17,7 +17,6 @@ public class TaxiUtils {
     private int batteryLevel;                           // Taxi's battery level
     private Position position;                          // Taxi's position
     private Queue<Double> measurementAvgQueue;          // Queue of the measurement's averages
-    private List<Ride> pendingRides;                        // List of pending rides
 
     private boolean isAvailable;                        // Taxi is available to take the ride
     private boolean isCharging;                         // Taxi is currently recharging
@@ -32,7 +31,6 @@ public class TaxiUtils {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
         this.measurementAvgQueue = new Queue<>();
-        this.pendingRides = new ArrayList<>();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -130,18 +128,6 @@ public class TaxiUtils {
 
     public synchronized void setElectionCounter(int electionCounter) {
         this.electionCounter = electionCounter;
-    }
-
-    public synchronized List<Ride> getPendingRides() {
-        return pendingRides;
-    }
-
-    public synchronized void addPendingRide(Ride ride){
-        pendingRides.add(ride);
-    }
-
-    public synchronized void setPendingRides(List<Ride> pendingRides) {
-        this.pendingRides = pendingRides;
     }
 
     public boolean isMaster() {

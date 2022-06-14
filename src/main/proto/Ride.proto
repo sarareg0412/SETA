@@ -1,6 +1,6 @@
 package unimi.dps.ride;
 
-message Ride{
+message RideMsg{
 
   message PositionMsg{
     required int32 x = 1;

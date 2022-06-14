@@ -6,7 +6,6 @@ import io.grpc.stub.StreamObserver;
 import taxi.Taxi;
 import taxi.TaxiInfo;
 import taxi.TaxiUtils;
-import unimi.dps.ride.RideOuterClass;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceImplBase;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Position;
@@ -46,9 +45,9 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     }
 
     @Override
-    public void startElection(ElectionMessage request, StreamObserver<OKElection> responseObserver) {
+    public void startElection(ElectionMsg request, StreamObserver<OKElection> responseObserver) {
         OKElection response;
-        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " participates to election for ride: " + request.getRide().getId());
+        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " got an election mgs for ride: " + request.getRide().getId());
         // Current taxi is not in the same district, sends back OK
         if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))){
             response = OKElection.newBuilder().setOk("OK").build();

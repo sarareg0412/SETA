@@ -11,9 +11,9 @@ import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 public class ElectionThread extends Thread{
 
     TaxiInfo otherTaxiInfo;
-    ElectionMessage electionMessage;
+    ElectionMsg electionMessage;
 
-    public ElectionThread(TaxiInfo otherTaxiInfo, ElectionMessage electionMessage) {
+    public ElectionThread(TaxiInfo otherTaxiInfo, ElectionMsg electionMessage) {
         this.otherTaxiInfo = otherTaxiInfo;
         this.electionMessage = electionMessage;
     }
@@ -24,7 +24,7 @@ public class ElectionThread extends Thread{
     }
 
 
-    private void reachOtherTaxi(TaxiInfo other, ElectionMessage electionMessage){
+    private void reachOtherTaxi(TaxiInfo other, ElectionMsg electionMessage){
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         // Blocking stub for the thread waits for the other taxi's response

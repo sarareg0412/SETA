@@ -5,7 +5,7 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import taxi.Taxi;
-import unimi.dps.ride.RideOuterClass;
+import unimi.dps.ride.Ride;
 
 import javax.ws.rs.HttpMethod;
 import java.text.DecimalFormat;
@@ -15,25 +15,29 @@ import java.util.Date;
 import java.util.List;
 
 public class Utils {
-    public static final String servicesAddress = "http://localhost:1337/";
-    public static final String taxiServicePath = "taxis";
-    public static final String statsServicePath = "stats";
+    public static final String  servicesAddress = "http://localhost:1337/";
+    public static final String  taxiServicePath = "taxis";
+    public static final String  statsServicePath = "stats";
 
-    public static final String MQTTBrokerAddress = "tcp://localhost:1883";
-    public static String[] topics = new String[]{"seta/smartcity/rides/district1",
+    public static final String  MQTTBrokerAddress = "tcp://localhost:1883";
+    public static String        rideCompletedTopic = "seta/smartcity/rides/completed";
+    public static String        taxiSubscribedTopic = "seta/smartcity/taxi/subscribed/";
+    public static String        taxiUnsubscribedTopic = "seta/smartcity/taxi/unsubscribed/";
+    public static String[]      districtTopics = new String[]{"seta/smartcity/rides/district1",
                                                  "seta/smartcity/rides/district2",
                                                  "seta/smartcity/rides/district3",
                                                  "seta/smartcity/rides/district4"};
-    public static final int cellsNumber = 10;
-    public static final int MAX_BATTERY = 100;
-    public static final int SLIDING_WINDOWS_BUFFER_LENGTH = 8;
-    public static final double OVERLAP = 0.5;
-    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+    public static final int     cellsNumber = 10;
+    public static final int     MAX_BATTERY = 100;
+    public static final int     SLIDING_WINDOWS_BUFFER_LENGTH = 8;
+    public static final double  OVERLAP = 0.5;
 
-    public static Position[] rechargeStations = {  new Position(0,0),
+    public static Position[]    rechargeStations = {  new Position(0,0),
                                                 new Position(0,9),
                                                 new Position(9,0),
                                                 new Position(9,9)};
+
+    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
 
     /* Given a client and url, send a GET request to that url */
     public static ClientResponse getRequest(Client client, String url){
@@ -54,12 +58,12 @@ public class Utils {
         return new Position((int) (Math.random()*10 ), (int) (Math.random()*10 ));
     }
 
-    public static Position getPositionFromPositionMsg(RideOuterClass.Ride.PositionMsg positionMsg){
+    public static Position getPositionFromPositionMsg(Ride.RideMsg.PositionMsg positionMsg){
         return new Position(positionMsg.getX(),positionMsg.getY());
     }
 
     public static String getDistrictTopicFromPosition(Position p){
-        return topics[getDistrictFromPosition(p)-1];
+        return districtTopics[getDistrictFromPosition(p)-1];
     }
 
     public static int getDistrictFromPosition(Position p){
