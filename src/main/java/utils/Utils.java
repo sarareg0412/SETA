@@ -20,9 +20,10 @@ public class Utils {
     public static final String  statsServicePath = "stats";
 
     public static final String  MQTTBrokerAddress = "tcp://localhost:1883";
-    public static String        rideCompletedTopic = "seta/smartcity/rides/completed";
-    public static String        taxiSubscribedTopic = "seta/smartcity/taxi/subscribed/";
-    public static String        taxiUnsubscribedTopic = "seta/smartcity/taxi/unsubscribed/";
+
+    public static final String  COMPLETED_RIDE = "seta/smartcity/rides/completed";
+    public static final String  TAXI_AVAILABLE = "seta/smartcity/taxi/available/";
+    public static final String  CHANGED_DISTRICT = "seta/smartcity/taxi/changed/";
     public static String[]      districtTopics = new String[]{"seta/smartcity/rides/district1",
                                                  "seta/smartcity/rides/district2",
                                                  "seta/smartcity/rides/district3",

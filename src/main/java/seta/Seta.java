@@ -1,13 +1,12 @@
 package seta;
 
+import com.google.protobuf.TextFormat;
 import org.eclipse.paho.client.mqttv3.*;
 import ride.Ride;
 import unimi.dps.ride.Ride.RideMsg;
 import utils.Position;
 import utils.Utils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -17,12 +16,18 @@ public class Seta {
     private MqttClient client;
     private MqttConnectOptions connOpts;
     private int qos;
-    private List<Ride> pendingRides;            // List of pending rides
-    private Map<String, Integer> nTaxiMap;      // Maps that keeps the number of taxis available for each district
+    private Map<Integer,List<Ride>> pendingRides;               // Map of pending rides by district
+    private Map<Integer, Integer> nTaxiMap;                     // Maps that keeps the number of taxis available for each district
 
     public Seta() {
-        this.pendingRides = new ArrayList<>();
-        this.nTaxiMap = new HashMap<>();
+        this.pendingRides = new HashMap<>();
+        //Map initialized with all values to 0 for each district
+        this.nTaxiMap = new HashMap<Integer,Integer>(){{
+                                                        put(1,0);
+                                                        put(2,0);
+                                                        put(3,0);
+                                                        put(4,0);
+                                                    }};
     }
 
     public static void main (String argv[]){
@@ -46,9 +51,10 @@ public class Seta {
                 }
             }*/
             while (true){
-            // Two rides are published every 5 seconds
+                // Two rides are published every 5 seconds
                 publishRide();
                 publishRide();
+                printSetaStatus();
                 Thread.sleep(10000);
             }
         }catch (MqttException e) {
@@ -75,18 +81,24 @@ public class Seta {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 String time = new Timestamp(System.currentTimeMillis()).toString();
-
-                switch (topic){
-                    case "seta/smartcity/rides/completed":
-                        RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                        System.out.println("************************RIDE COMPLETED***********************************");
-                        System.out.println("Message Arrived at Time: " + time + "  Topic: " + topic + "  Message: "
-                                + rideMsg.toString());
-                        System.out.println("***********************************************************************");
-                        removePendingRideFromList(rideMsg);
-                        break;
-                    case "seta/smartcity/taxi/available/":
-
+                if (topic.equals(Utils.COMPLETED_RIDE)){
+                    RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
+                    System.out.println("> RIDE COMPLETED");
+                    removePendingRideFromMap(rideMsg);
+                }else {
+                    String topic2 = topic.substring(0,topic.length() - 1);
+                    switch (topic2){
+                        case Utils.TAXI_AVAILABLE:     //Update counter for the taxi in each district
+                            char k1 = topic.charAt(topic.length() -1 );
+                            System.out.println("> TAXI AVAILABLE AT DISTRICT "+k1);
+                            updateNTaxiMap(k1, getNTaxiForDistrict(k1) +1 );
+                            break;
+                        case Utils.CHANGED_DISTRICT:
+                            int k2 = topic.charAt(topic.length() -1 );
+                            System.out.println("> TAXI CHANGED DISTRICT: " + k2);
+                            updateNTaxiMap(k2, getNTaxiForDistrict(k2) -1 );
+                            break;
+                    }
                 }
             }
 
@@ -96,43 +108,69 @@ public class Seta {
             }
         });
 
-        // Subscribes to save pending rides
-        client.subscribe(Utils.rideCompletedTopic, qos);
+        // Subscribes to various topics
+        client.subscribe(Utils.COMPLETED_RIDE, qos);
+        client.subscribe(Utils.TAXI_AVAILABLE + "#", qos);
+        client.subscribe(Utils.CHANGED_DISTRICT + "#", qos);
     }
 
     /* Remove pending ride from list */
-    private synchronized void removePendingRideFromList(RideMsg rideMsg){
+    private synchronized void removePendingRideFromMap(RideMsg rideMsg){
         Ride ride = new Ride(rideMsg);
-        if (containsRide(ride.getId())) {
-            pendingRides.remove(ride);
+        int distr = Utils.getDistrictFromPosition(ride.getStart());
+        if (containsRide(distr, ride.getId())) {
+            List<Ride> rideList = getPendingRidesFromDistrict(distr);
+            pendingRides.put(distr, removeRideFromList(rideList,rideMsg.getId()));
             System.out.println("> Pending ride " + ride.getId() + " removed from list ");
         }
     }
 
 
     /* The ride is added to the pending list */
-    private synchronized void addPendingRideToList(Ride ride){
-        if (!containsRide(ride.getId())) {
-            pendingRides.add(ride);
+    private synchronized void addPendingRideToMap(Ride ride){
+        int distr = Utils.getDistrictFromPosition(ride.getStart());
+
+        if (!containsRide(distr, ride.getId())) {
+            List<Ride> rideList = getPendingRidesFromDistrict(distr);
+
+            if (rideList == null)
+                rideList = new ArrayList<>();
+
+            rideList.add(ride);
+            pendingRides.put(distr, rideList);
             System.out.println("> Pending ride " + ride.getId() + " added to list ");
         }
     }
 
-    private boolean containsRide(String id){
-        for (Ride r : pendingRides){
-            if (r.getId().equals(id))
-                return true;
+    /* Returns true if a ride from a certain district was still pending */
+    private boolean containsRide(int district, String id){
+        List<Ride> districtPendingRides = getPendingRidesFromDistrict(district);
+        if (districtPendingRides != null) {
+            for (Ride r : districtPendingRides) {
+                if (r.getId().equals(id))
+                    return true;
+            }
         }
         return false;
     }
 
-    private synchronized Ride getFirstRide(){
-        Ride r = null;
-        if (pendingRides.size() > 0){
-            r = pendingRides.get(0);
-            pendingRides.remove(0);
+    private List<Ride> removeRideFromList(List<Ride> list, String id){
+        int index = 0;
+        for (Ride r : list){
+            if (r.getId().equals(id))
+                index = list.indexOf(r);
         }
-        return r;
+
+        list.remove(index);
+        return list;
+    }
+
+    public synchronized List<Ride> getPendingRidesFromDistrict(int district) {
+        return pendingRides.get(district);
+    }
+
+    public void setPendingRides(Map<Integer, List<Ride>> pendingRides) {
+        this.pendingRides = pendingRides;
     }
 
     /* Create a new ride */
@@ -148,28 +186,59 @@ public class Seta {
         return r;
     }
 
-
+    public synchronized Ride getFirstPendingRideFromDistrict(int distr){
+        return getPendingRidesFromDistrict(distr).get(0);
+    }
 
     public void publishRide() throws MqttException {
         RideMsg rideMsg;
-        Ride ride = getFirstRide();
-        /* If there is a pending ride, publishes that again, otherwise
+        /* If there is a taxi available, publishes again a pending ride, otherwise
         * create a new ride from scratch */
-        //if (ride != null) {
-        //    rideMsg = ride.createRideMsg();
-        //    System.out.println("> Republishing pending ride " + ride);
-        //} else {
+        Ride r = null;
+
+        for(int i=1; i<=4; i++){
+            // There is at least a taxi available and a pending ride in that district
+            if (getNTaxiForDistrict(i) > 0 && getPendingRidesFromDistrict(i).size()>0){
+                //Gets the first pending ride
+                r = getFirstPendingRideFromDistrict(i);
+            }
+        }
+        /* No taxi available or pending rides were found, create new ride*/
+        if (r == null){
             // Create the rides with a positive random id
-            Ride r = createNewRide(String.valueOf(Math.abs(new Random().nextInt())));
-            addPendingRideToList(r);
-            rideMsg = r.createRideMsg();
-        //}
+            r = createNewRide(String.valueOf(Math.abs(new Random().nextInt())));
+            addPendingRideToMap(r);
+        }
+
+        rideMsg = r.createRideMsg();
+
         MqttMessage msg = new MqttMessage(rideMsg.toByteArray());
         msg.setQos(qos);
         client.publish(Utils.getDistrictTopicFromPosition(new Position(rideMsg.getStart())), msg);
-        System.out.println("> RideMsg published:" + rideMsg);
+        System.out.println("> RideMsg published:" + TextFormat.shortDebugString(rideMsg));
 
         //TODO client disconnect
     }
 
+    private synchronized void updateNTaxiMap(int k, int v){
+        nTaxiMap.put(k,v);
+    }
+
+    private synchronized Integer getNTaxiForDistrict(int k){
+        return nTaxiMap.get(k);
+    }
+
+    private void printSetaStatus(){
+        StringBuilder bdr = new StringBuilder("> Current SETA status: ").append("\n");
+        for(int i = 1; i<= 4 ; i++){
+            bdr.append(" DSTR").append(i).append(": ").append(nTaxiMap.get(i)).append(" taxi; ");
+            if (pendingRides.get(i) != null)
+                bdr.append(pendingRides.get(i).size());
+            else
+                bdr.append("0");
+
+            bdr.append(" RIDES").append("\n");
+        }
+        System.out.println(bdr);
+    }
 }

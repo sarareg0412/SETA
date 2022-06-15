@@ -111,6 +111,8 @@ public class Taxi {
         try {
             initMqttComponents();
             subscribeToTopic(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
+            //Notifies seta
+            publishAvailable();
             // Start to acquire pollution levels from sensor
             pm10Simulator.start();
             // Start to send statistics as soon as the taxi is subscribed to the district's topic
@@ -369,7 +371,9 @@ public class Taxi {
         //Taxi subscribes to new distric topic if necessary
         if (Utils.getDistrictFromPosition(taxiUtils.getPosition()) != Utils.getDistrictFromPosition(ride.getFinish())) {
             unsubscribe(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
+            publishChangeDistrict();
             subscribeToTopic(Utils.getDistrictTopicFromPosition(ride.getFinish()));
+            publishAvailable();
         }
         // Taxi completed the ride; changes position
         taxiUtils.setPosition(ride.getFinish());
@@ -385,8 +389,26 @@ public class Taxi {
         //Seta starts creating the rides with a positive random id
         MqttMessage msg = new MqttMessage(ride.toByteArray());
         msg.setQos(qos);
-        MQTTClient.publish(Utils.rideCompletedTopic, msg);
-        System.out.print("Pending ride published:" + ride);
+        MQTTClient.publish(Utils.COMPLETED_RIDE, msg);
+        System.out.print("Completed ride published:" + ride);
+    }
+
+    /* Notifies SETA that it is available */
+    public void publishAvailable() throws MqttException {
+        //Seta starts creating the rides with a positive random id
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        MQTTClient.publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
+        System.out.print("Correctly notified SETA");
+    }
+
+    /* Notifies SETA that taxi changed district */
+    public void publishChangeDistrict() throws MqttException {
+        //Seta starts creating the rides with a positive random id
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        MQTTClient.publish(Utils.CHANGED_DISTRICT + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
+        System.out.print("Correctly notified SETA");
     }
 
     public void addStatsToQueue(double km){
