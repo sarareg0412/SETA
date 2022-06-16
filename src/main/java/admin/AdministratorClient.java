@@ -37,7 +37,7 @@ public class AdministratorClient {
                     }else
                         throw new IOException();
                 } catch (IOException e) {
-                    System.out.print("> Please insert a valid number.\n");
+                    System.out.println("> Please insert a valid number.\n");
                     e.printStackTrace();
                 }
             }
@@ -52,21 +52,21 @@ public class AdministratorClient {
                 try {
                     printTaxiList();
                 } catch (Exception e) {
-                    System.out.print(e.getMessage());
+                    System.out.println(e.getMessage());
                 }
                 break;
             case 2:
                 try {
                     printTaxiStats();
                 } catch (Exception e) {
-                    System.out.print(e.getMessage());
+                    System.out.println(e.getMessage());
                 }
                 break;
             case 3:
                 try {
                     printTimestampStats();
                 } catch (Exception e) {
-                    System.out.print(e.getMessage());
+                    System.out.println(e.getMessage());
                 }
                 break;
         }
@@ -82,12 +82,12 @@ public class AdministratorClient {
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
             taxiResponse = clientResponse.getEntity(TaxiResponse.class);
             if (taxiResponse.getTaxiInfoList() != null){
-                System.out.print("> Taxis in the network:\n");
+                System.out.println("> Taxis in the network:\n");
                 for (TaxiInfo info : taxiResponse.getTaxiInfoList()){
-                    System.out.print(info + "\n");
+                    System.out.println(info + "\n");
                 }
             }else
-                System.out.print("> There are no taxis in the network yet.\n");
+                System.out.println("> There are no taxis in the network yet.\n");
 
         }else {
             throw new Exception("Status code: "+ statusInfo);
@@ -108,7 +108,7 @@ public class AdministratorClient {
                     throw new IOException();
 
             }catch (IOException e){
-                    System.out.print("> Please insert a valid ID. \n");
+                    System.out.println("> Please insert a valid ID. \n");
             } catch (Exception e) {
                 System.out.println("> An error occurred. Please insert a value\n");
             }
@@ -126,9 +126,9 @@ public class AdministratorClient {
                 }else
                     throw new IOException();
             } catch (IOException e) {
-                System.out.print("> Please insert a valid number.\n");
+                System.out.println("> Please insert a valid number.\n");
             } catch (Exception e) {
-               System.out.print("> An Error occurred. Please insert a number. \n");
+               System.out.println("> An Error occurred. Please insert a number. \n");
             }
         }
 
@@ -142,7 +142,7 @@ public class AdministratorClient {
             if (response.getStatsList() != null){
                 computeAverage(response.getStatsList());
             }else
-                System.out.print("> There are no statistics for the taxi "+ id +" yet.\n");
+                System.out.println("> There are no statistics for the taxi "+ id +" yet.\n");
         } else if (ClientResponse.Status.NOT_FOUND.getStatusCode() == statusInfo) {
             //The taxi specified does not exist
             throw new TaxiNotFoundException("No stats found for taxi " + id +".");
@@ -165,7 +165,7 @@ public class AdministratorClient {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.print("> Timestamp not valid. Please insert a valid timestamp.");
+                System.out.println("> Timestamp not valid. Please insert a valid timestamp.");
             } catch (Exception e) {
                 System.out.println("> An error occurred. Please insert a timestamp");
             }
@@ -182,7 +182,7 @@ public class AdministratorClient {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.print("> Timestamp not valid. Please insert a valid timestamp.");
+                System.out.println("> Timestamp not valid. Please insert a valid timestamp.");
             } catch (Exception e) {
                 System.out.println("> An error occurred. Please insert a timestamp");
             }
@@ -198,7 +198,7 @@ public class AdministratorClient {
             if (response.getStatsList() != null){
                 computeAverage(response.getStatsList());
             }else
-                System.out.print("> There are no statistics between "+ t1 +" and "+ t2 +" yet.\n");
+                System.out.println("> There are no statistics between "+ t1 +" and "+ t2 +" yet.\n");
         }else {
             throw new Exception("> An error occurred. Status code: "+ statusInfo);
         }

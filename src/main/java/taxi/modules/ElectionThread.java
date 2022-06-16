@@ -8,6 +8,8 @@ import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 
+import java.util.concurrent.TimeUnit;
+
 public class ElectionThread extends Thread{
 
     TaxiInfo otherTaxiInfo;
@@ -30,6 +32,11 @@ public class ElectionThread extends Thread{
         // Blocking stub for the thread waits for the other taxi's response
         OKElection response = stub.startElection(electionMessage);
 
+        try {
+            channel.awaitTermination(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            System.out.println("> [ERR] An error occurred while waiting for the election channel to shutdown");
+        }
         if (response.getOk().equals("KO")) {
             TaxiUtils.getInstance().setMaster(false);
         }else{   // Election counter updated

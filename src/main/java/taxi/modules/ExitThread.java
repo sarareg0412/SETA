@@ -27,7 +27,7 @@ public class ExitThread extends Thread {
         boolean check = false;
 
         while(!check) {
-            System.out.print("> Write \"quit\" to terminate Taxi.\n");
+            System.out.println("> Write \"quit\" to terminate Taxi.\n");
 
             try {
                 check = inFromUser.readLine().equalsIgnoreCase("quit");
@@ -96,7 +96,7 @@ public class ExitThread extends Thread {
     private void deleteTaxi() throws Exception {
         String path = Utils.servicesAddress + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
-        System.out.print("ok " + clientResponse +"\n");
+        System.out.println("ok " + clientResponse +"\n");
         if (clientResponse == null){
             //TODO
         }
@@ -104,7 +104,7 @@ public class ExitThread extends Thread {
 
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
             //Taxi correctly deleted
-            System.out.print("> Taxi correctly deleted from the network.");
+            System.out.println("> Taxi correctly deleted from the network.");
         } else if (ClientResponse.Status.CONFLICT.getStatusCode() == statusInfo) {
             //Taxi not present
             throw new TaxiNotFoundException();

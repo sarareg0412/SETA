@@ -21,7 +21,7 @@ public class Utils {
 
     public static final String  MQTTBrokerAddress = "tcp://localhost:1883";
 
-    public static final String  COMPLETED_RIDE = "seta/smartcity/rides/completed";
+    public static final String  TAKEN_RIDE = "seta/smartcity/rides/taken";
     public static final String  TAXI_AVAILABLE = "seta/smartcity/taxi/available/";
     public static final String  CHANGED_DISTRICT = "seta/smartcity/taxi/changed/";
     public static String[]      districtTopics = new String[]{"seta/smartcity/rides/district1",

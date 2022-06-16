@@ -94,7 +94,7 @@ public class Taxi {
                     for (TaxiInfo otherTaxiInfo : taxiResponse.getTaxiInfoList()) {
                         Taxi other = new Taxi(otherTaxiInfo);
                         taxiUtils.addNewTaxiToList(other);          // The taxi's list is updated
-                        System.out.print("> Taxi present : " + otherTaxiInfo.getId() + "\n");
+                        System.out.println("> Taxi present : " + otherTaxiInfo.getId() + "\n");
                         // The taxi notifies the others that it is now part of the network
                         notifyOtherTaxi(newTaxiMsg, otherTaxiInfo);
                     }
@@ -102,9 +102,9 @@ public class Taxi {
                 taxiUtils.addNewTaxiToList(this);           //The taxi's list now contains itself
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
-                System.out.print(e.getMessage() + "\n");
+                System.out.println(e.getMessage() + "\n");
             } catch (Exception e) {
-                System.out.print(e.getMessage() + "\n");
+                System.out.println(e.getMessage() + "\n");
             }
         }while (!initComplete);
 
@@ -191,7 +191,7 @@ public class Taxi {
         boolean check = true;
 
         while(check) {
-            System.out.print("> Insert Taxi ID: \n");
+            System.out.println("> Insert Taxi ID: \n");
 
             try {
 
@@ -202,7 +202,7 @@ public class Taxi {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.print("> Please insert a valid ID. \n");
+                System.out.println("> Please insert a valid ID. \n");
             }catch (Exception e){
                 System.out.println("> An error occurred. Please insert a value\n");
             }
@@ -211,7 +211,7 @@ public class Taxi {
         check = true;
 
         while(check) {
-            System.out.print("> Insert port number: \n");
+            System.out.println("> Insert port number: \n");
 
             try {
                 String s = inFromUser.readLine();
@@ -228,7 +228,7 @@ public class Taxi {
         check = true;
 
         while(check) {
-            System.out.print("> Insert address: \n");
+            System.out.println("> Insert address: \n");
 
             try {
                 taxiInfo.setAddress(inFromUser.readLine());
@@ -238,7 +238,7 @@ public class Taxi {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.print("> Please insert a valid address. \n");
+                System.out.println("> Please insert a valid address. \n");
             }catch (Exception e){
                 System.out.println("> An error occurred. Please insert a value\n");
             }
@@ -352,10 +352,10 @@ public class Taxi {
         if (TaxiUtils.getInstance().isMaster()){
             try {
                 System.out.println("> Taxi "+taxiInfo.getId()+" is taking the ride " + ride.getId());
+                publishTakenRide(rideMsg);
                 takeRide(ride);
-                publishCompletedRide(rideMsg);
             } catch (MqttException e) {
-                System.out.print("> An error occurred while taking the ride. ");
+                System.out.println("> An error occurred while taking the ride. ");
             }
         }
     }
@@ -385,12 +385,12 @@ public class Taxi {
     }
 
     /* Sends back an mqtt message to SETA that the ride couldn't be taken by any taxi */
-    public void publishCompletedRide(RideMsg ride) throws MqttException {
+    public void publishTakenRide(RideMsg ride) throws MqttException {
         //Seta starts creating the rides with a positive random id
         MqttMessage msg = new MqttMessage(ride.toByteArray());
         msg.setQos(qos);
-        MQTTClient.publish(Utils.COMPLETED_RIDE, msg);
-        System.out.print("Completed ride published:" + ride);
+        MQTTClient.publish(Utils.TAKEN_RIDE, msg);
+        System.out.println("> Taken ride published:" + ride);
     }
 
     /* Notifies SETA that it is available */
@@ -399,7 +399,7 @@ public class Taxi {
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(qos);
         MQTTClient.publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.print("Correctly notified SETA");
+        System.out.println("Correctly notified SETA");
     }
 
     /* Notifies SETA that taxi changed district */
@@ -408,7 +408,7 @@ public class Taxi {
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(qos);
         MQTTClient.publish(Utils.CHANGED_DISTRICT + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.print("Correctly notified SETA");
+        System.out.println("Correctly notified SETA");
     }
 
     public void addStatsToQueue(double km){
@@ -420,12 +420,12 @@ public class Taxi {
 
     private void unsubscribe(String topic) throws MqttException {
         MQTTClient.unsubscribe(topic);
-        System.out.print("> Taxi unsubscribed from topic : " + topic + "\n");
+        System.out.println("> Taxi unsubscribed from topic : " + topic + "\n");
     }
 
     private void subscribeToTopic(String topic) throws MqttException {
         MQTTClient.subscribe(topic, qos);
-        System.out.print("> Taxi subscribed to topic : " + topic + "\n");
+        System.out.println("> Taxi subscribed to topic : " + topic + "\n");
     }
 
     public TaxiInfo getTaxiInfo() {
