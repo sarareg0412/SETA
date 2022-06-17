@@ -5,11 +5,12 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import ride.Ride;
 import taxi.TaxiUtils;
 import utils.Utils;
-
+import unimi.dps.ride.Ride.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SetaUtils {
     private Map<Integer, List<Ride>> pendingRides;               // Map of pending rides by district
@@ -48,7 +49,7 @@ public class SetaUtils {
     }
 
     /* Remove pending ride from list */
-    public synchronized void removePendingRideFromMap(unimi.dps.ride.Ride.RideMsg rideMsg){
+    public synchronized void removePendingRideFromMap(RideMsg rideMsg){
         Ride ride = new Ride(rideMsg);
         int distr = Utils.getDistrictFromPosition(ride.getStart());
         if (containsRide(distr, ride.getId())) {
@@ -96,6 +97,15 @@ public class SetaUtils {
             }
         }
         return false;
+    }
+
+    public void resetIsSentStatus(){
+        for (int i=1; i<=4; i++){
+            List<Ride> list = getPendingRidesFromDistrict(i);
+            if (list != null) {
+                list.forEach(ride -> ride.setSent(false));
+            }
+        }
     }
 
     public synchronized List<Ride> getPendingRidesFromDistrict(int district) {

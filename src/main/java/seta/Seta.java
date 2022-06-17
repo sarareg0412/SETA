@@ -47,7 +47,11 @@ public class Seta {
                 t2 = new PublishRideThread();
                 t1.start();
                 t2.start();
+                t1.join();
+                t2.join();
                 printSetaStatus();
+                setaUtils.resetIsSentStatus();
+                // Reset is sent status
                 Thread.sleep(10000);
             }
         }catch (MqttException e) {

@@ -8,6 +8,7 @@ public class Ride {
     String id;
     Position start;
     Position finish;
+    boolean sent;               // The ride was sent by Seta to the taxis
 
     public Ride() {
     }
@@ -64,5 +65,13 @@ public class Ride {
                                                     .setY(finish.getY())
                                                     .build())
                       .build();
+    }
+
+    public synchronized boolean wasSent() {
+        return sent;
+    }
+
+    public synchronized void setSent(boolean sent) {
+        this.sent = sent;
     }
 }

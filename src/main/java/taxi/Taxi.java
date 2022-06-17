@@ -158,6 +158,9 @@ public class Taxi {
                 System.out.println("Message Arrived at Time: " + time + "  Topic: " + topic + "  Message: "
                         + rideMsg.toString());
                 System.out.println("***********************************************************************");
+                // Taxi notifies again SETA that it's available to take rides in case SETA
+                // was started after the taxi itself
+                // publishAvailable();
                 startElection(rideMsg);
             }
 
