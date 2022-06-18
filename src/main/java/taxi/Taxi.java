@@ -2,6 +2,7 @@ package taxi;
 
 import com.google.gson.Gson;
 import com.google.protobuf.Empty;
+import com.google.protobuf.TextFormat;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -42,14 +43,13 @@ public class Taxi {
     //Ride district subscription
     private MqttClient MQTTClient;
     private Client RESTClient;
-    private String districtTopic;
     private int qos;
 
     private PM10Simulator pm10Simulator;
     //Threads
     private GRPCServerThread grpcServerThread;
     private StatsThread statsThread;
-    private ExitThread exitThread;
+    private StdInThread stdInThread;
     private MainRechargeThread mainRechargeThread;
 
     public static void main(String argv[]){
@@ -120,7 +120,7 @@ public class Taxi {
             e.printStackTrace();
         }
         mainRechargeThread.start();     // Start thread to recharge
-        exitThread.start();             // Start thread to exit in a controlled way
+        stdInThread.start();             // Start thread to exit in a controlled way
 
         while (true) {
             try {
@@ -154,14 +154,10 @@ public class Taxi {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 String time = new Timestamp(System.currentTimeMillis()).toString();
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                System.out.println("****************************NEW RIDE***********************************");
-                System.out.println("Message Arrived at Time: " + time + "  Topic: " + topic + "  Message: "
-                        + rideMsg.toString());
-                System.out.println("***********************************************************************");
-                // Taxi notifies again SETA that it's available to take rides in case SETA
-                // was started after the taxi itself
-                // publishAvailable();
-                startElection(rideMsg);
+                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
+                    System.out.println("> NEW RIDE REQUEST " + TextFormat.shortDebugString(rideMsg));
+                    startElection(rideMsg);
+                }
             }
 
             @Override
@@ -183,7 +179,7 @@ public class Taxi {
     public void initThreads(){
         grpcServerThread = new GRPCServerThread();
         grpcServerThread.start();                           // RPC thread started
-        exitThread = new ExitThread();
+        stdInThread = new StdInThread();
         statsThread = new StatsThread();
         pm10Simulator = new PM10Simulator(new MeasurementsBuffer());
         mainRechargeThread = new MainRechargeThread();
@@ -375,7 +371,7 @@ public class Taxi {
         //Taxi subscribes to new distric topic if necessary
         if (Utils.getDistrictFromPosition(taxiUtils.getPosition()) != Utils.getDistrictFromPosition(ride.getFinish())) {
             unsubscribe(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
-            publishChangeDistrict();
+            Utils.publishUnavailable(MQTTClient, qos);
             subscribeToTopic(Utils.getDistrictTopicFromPosition(ride.getFinish()));
             publishAvailable();
         }
@@ -386,6 +382,7 @@ public class Taxi {
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
         addStatsToQueue(ride.getKmToTravel());
         taxiUtils.setAvailable(true);
+        System.out.println("> RIDE COMPLETED " + ride.getId());
     }
 
     /* Sends back an mqtt message to SETA that the ride couldn't be taken by any taxi */
@@ -399,21 +396,13 @@ public class Taxi {
 
     /* Notifies SETA that it is available */
     public void publishAvailable() throws MqttException {
-        //Seta starts creating the rides with a positive random id
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(qos);
         MQTTClient.publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.println("Correctly notified SETA");
+        System.out.println("> TAXI AVAILABLE Correctly notified SETA");
     }
 
-    /* Notifies SETA that taxi changed district */
-    public void publishChangeDistrict() throws MqttException {
-        //Seta starts creating the rides with a positive random id
-        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
-        msg.setQos(qos);
-        MQTTClient.publish(Utils.CHANGED_DISTRICT + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.println("Correctly notified SETA");
-    }
+
 
     public void addStatsToQueue(double km){
         Stats stats = new Stats();
@@ -439,4 +428,5 @@ public class Taxi {
     public void setTaxiInfo(TaxiInfo taxiInfo) {
         this.taxiInfo = taxiInfo;
     }
+
 }

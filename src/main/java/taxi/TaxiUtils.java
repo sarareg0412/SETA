@@ -2,6 +2,7 @@ package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
 import ride.Ride;
+import utils.Counter;
 import utils.Position;
 import utils.Queue;
 import utils.Utils;
@@ -23,10 +24,13 @@ public class TaxiUtils {
     private boolean isElected;                          // Taxi is elected and can take the rida
 
     private boolean wantsToCharge;                       // Taxi wants to charge
-    private final Object  wantsToChargeLock;                   // Wants to charge lock
+    private final Object  wantsToChargeLock;                // Wants to charge lock
+    private Counter rechargeCounter;                    // Counter for # of taxi participating
+    private long rechargeTimestamp;
 
     private int electionCounter;                        // Number of responses gotten for the election
     private boolean isMaster;                           // Taxi is selected to take the ride
+    private boolean quit;                               //Taxi wants to leave the network
 
     private static TaxiUtils instance;
 
@@ -34,7 +38,6 @@ public class TaxiUtils {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
         this.measurementAvgQueue = new Queue<>();
-
         this.wantsToChargeLock = new Object();
     }
 
@@ -91,19 +94,19 @@ public class TaxiUtils {
             taxisList.remove(index);
     }
 
-    public boolean isAvailable() {
+    public synchronized boolean isAvailable() {
         return isAvailable;
     }
 
-    public void setAvailable(boolean available) {
+    public synchronized void setAvailable(boolean available) {
         isAvailable = available;
     }
 
-    public boolean isCharging() {
+    public synchronized boolean isCharging() {
         return isCharging;
     }
 
-    public void setCharging(boolean charging) {
+    public synchronized void setCharging(boolean charging) {
         isCharging = charging;
     }
 
@@ -161,5 +164,29 @@ public class TaxiUtils {
 
     public Object getWantsToChargeLock() {
         return wantsToChargeLock;
+    }
+
+    public synchronized Counter getRechargeCounter() {
+        return rechargeCounter;
+    }
+
+    public synchronized void setRechargeCounter(Counter rechargeCounter) {
+        this.rechargeCounter = rechargeCounter;
+    }
+
+    public long getRechargeTimestamp() {
+        return rechargeTimestamp;
+    }
+
+    public void setRechargeTimestamp(long rechargeTimestamp) {
+        this.rechargeTimestamp = rechargeTimestamp;
+    }
+
+    public boolean quit() {
+        return quit;
+    }
+
+    public void setQuit(boolean quit) {
+        this.quit = quit;
     }
 }

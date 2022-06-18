@@ -1,4 +1,4 @@
-package statistics.modules;
+package taxi.modules;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -43,6 +43,7 @@ public class ElectionThread extends Thread{
             TaxiUtils.getInstance().setElectionCounter(TaxiUtils.getInstance().getElectionCounter() + 1);
         }
         System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " counter: " + TaxiUtils.getInstance().getElectionCounter());
+        channel.shutdown();
     }
 
 

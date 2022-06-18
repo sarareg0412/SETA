@@ -1,4 +1,4 @@
-package statistics.modules;
+package taxi.modules;
 
 import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;
@@ -8,7 +8,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import taxi.Taxi;
-import taxi.TaxiInfo;
 import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
@@ -19,30 +18,48 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
-public class ExitThread extends Thread {
+public class StdInThread extends Thread {
 
     @Override
     public void run() {
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        boolean check = false;
+        while (!TaxiUtils.getInstance().quit()) {
+            BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+            boolean check = false;
+            String line;
+            int i = 0;
+            while (!check) {
+                System.out.println("> Write \"quit\" to terminate Taxi.");
+                System.out.println("> Write \"recharge\" to recharge Taxi.");
 
-        while(!check) {
-            System.out.println("> Write \"quit\" to terminate Taxi.\n");
+                try {
+                    line = inFromUser.readLine();
+                    if (line.equalsIgnoreCase("quit")) {
+                        check = true;
+                        i = 1;
+                    } else if (line.equalsIgnoreCase("recharge")) {
+                        check = true;
+                        i = 2;
+                    }
+                } catch (Exception e) {
+                    System.out.println("> An error occurred." + e.getMessage());
+                }
+            }
 
-            try {
-                check = inFromUser.readLine().equalsIgnoreCase("quit");
-            }catch (Exception e){
-                System.out.println("> An error occurred." + e.getMessage());
+            switch (i) {
+                case 1:
+                    try {
+                        stopTaxi();
+                    } catch (Exception e) {
+                        System.out.println("> An error occurred while trying to leave the network. "
+                                + e.getMessage());
+                    }
+                    System.exit(0);
+                    break;
+                case 2:
+                    TaxiUtils.getInstance().setWantsToCharge(true);
+                    break;
             }
         }
-
-        try {
-            stopTaxi();
-        } catch (Exception e) {
-            System.out.println("> An error occurred while trying to leave the network. "
-                    + e.getMessage());
-        }
-        System.exit(0);
     }
 
     private void stopTaxi() throws Exception {

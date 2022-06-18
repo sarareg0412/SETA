@@ -84,7 +84,21 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     }
 
     @Override
-    public void startRechargeProcess(RechargeMsg request, StreamObserver<OKMsg> responseObserver) {
-        super.startRechargeProcess(request, responseObserver);
+    public void askRecharge(RechargeMsg request, StreamObserver<OKMsg> responseObserver) {
+
+        // Current Taxi is not charging and doesn't want to, sends OK
+        if (!TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()){
+            responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+        }else if (TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()){
+            if (request.getTimestamp() <= TaxiUtils.getInstance().getRechargeTimestamp()){
+                // Request has lesser or equal timestamp
+                responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+
+            }else {
+                //ACCODO LA RICHIESTA
+            }
+        }
+
+        responseObserver.onCompleted();
     }
 }

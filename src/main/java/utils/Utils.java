@@ -1,10 +1,15 @@
 package utils;
 
+import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import taxi.Taxi;
+import taxi.TaxiUtils;
 import unimi.dps.ride.Ride;
 
 import javax.ws.rs.HttpMethod;
@@ -23,7 +28,7 @@ public class Utils {
 
     public static final String  TAKEN_RIDE = "seta/smartcity/rides/taken";
     public static final String  TAXI_AVAILABLE = "seta/smartcity/taxi/available/";
-    public static final String  CHANGED_DISTRICT = "seta/smartcity/taxi/changed/";
+    public static final String  TAXI_UNAVAILABLE = "seta/smartcity/taxi/unavailable/";
     public static String[]      districtTopics = new String[]{"seta/smartcity/rides/district1",
                                                  "seta/smartcity/rides/district2",
                                                  "seta/smartcity/rides/district3",
@@ -129,4 +134,19 @@ public class Utils {
         return t1.compareToIgnoreCase(t2) <= 0;
     }
 
+    public static Position getNearestStationPosition(Position p){
+        return rechargeStations[getDistrictFromPosition(p) - 1];
+    }
+
+    public static double getDistanceFromRechargeStation(Position p){
+        return getDistanceBetweenPositions(p, getNearestStationPosition(p));
+    }
+
+    /* Notifies SETA that taxi is not available anymore in that district */
+    public static void publishUnavailable(MqttClient client, int qos) throws MqttException {
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(TaxiUtils.getInstance().getPosition()), msg);
+        System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
+    }
 }
