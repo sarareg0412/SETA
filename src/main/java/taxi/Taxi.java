@@ -16,10 +16,8 @@ import ride.Ride;
 import simulator.MeasurementsBuffer;
 import simulator.PM10Simulator;
 import statistics.Stats;
-import taxi.modules.ElectionThread;
-import taxi.modules.GRPCServerThread;
-import taxi.modules.StatsThread;
-import taxi.modules.ExitThread;
+import statistics.modules.*;
+import taxi.modules.*;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
@@ -52,6 +50,7 @@ public class Taxi {
     private GRPCServerThread grpcServerThread;
     private StatsThread statsThread;
     private ExitThread exitThread;
+    private MainRechargeThread mainRechargeThread;
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -120,6 +119,7 @@ public class Taxi {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+        mainRechargeThread.start();     // Start thread to recharge
         exitThread.start();             // Start thread to exit in a controlled way
 
         while (true) {
@@ -186,6 +186,7 @@ public class Taxi {
         exitThread = new ExitThread();
         statsThread = new StatsThread();
         pm10Simulator = new PM10Simulator(new MeasurementsBuffer());
+        mainRechargeThread = new MainRechargeThread();
     }
 
     public void initTaxi(){

@@ -1,4 +1,4 @@
-package taxi.modules;
+package statistics.modules;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -30,7 +30,7 @@ public class ElectionThread extends Thread{
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         // Blocking stub for the thread waits for the other taxi's response
-        OKElection response = stub.startElection(electionMessage);
+        OKMsg response = stub.startElection(electionMessage);
 
         try {
             channel.awaitTermination(1, TimeUnit.SECONDS);

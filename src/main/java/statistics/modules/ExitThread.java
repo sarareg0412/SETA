@@ -1,4 +1,4 @@
-package taxi.modules;
+package statistics.modules;
 
 import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;

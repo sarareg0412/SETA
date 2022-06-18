@@ -17,13 +17,18 @@ message ElectionMsg{
   ride.RideMsg ride = 4;
 }
 
+message RechargeMsg{
+  int64 timestamp = 1;
+  string id = 2;
+}
 
-message OKElection{
+message OKMsg{
   string ok = 1;
 }
 
 service TaxiRPCService {
   rpc addTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
   rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
-  rpc startElection(ElectionMsg) returns (OKElection);
+  rpc startElection(ElectionMsg) returns (OKMsg);
+  rpc startRechargeProcess(RechargeMsg) returns (OKMsg);
 }

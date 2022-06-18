@@ -22,6 +22,9 @@ public class TaxiUtils {
     private boolean isCharging;                         // Taxi is currently recharging
     private boolean isElected;                          // Taxi is elected and can take the rida
 
+    private boolean wantsToCharge;                       // Taxi wants to charge
+    private final Object  wantsToChargeLock;                   // Wants to charge lock
+
     private int electionCounter;                        // Number of responses gotten for the election
     private boolean isMaster;                           // Taxi is selected to take the ride
 
@@ -31,6 +34,8 @@ public class TaxiUtils {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
         this.measurementAvgQueue = new Queue<>();
+
+        this.wantsToChargeLock = new Object();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -136,5 +141,25 @@ public class TaxiUtils {
 
     public void setMaster(boolean master) {
         isMaster = master;
+    }
+
+    public boolean wantsToCharge() {
+        synchronized (wantsToChargeLock){
+            return wantsToCharge;
+        }
+    }
+
+    public void setWantsToCharge(boolean wantsToCharge) {
+        synchronized (wantsToChargeLock) {
+            this.wantsToCharge = wantsToCharge;
+            if (wantsToCharge){
+                // Notifies the MainRechargeThread that the taxi wants to charge
+                wantsToChargeLock.notify();
+            }
+        }
+    }
+
+    public Object getWantsToChargeLock() {
+        return wantsToChargeLock;
     }
 }

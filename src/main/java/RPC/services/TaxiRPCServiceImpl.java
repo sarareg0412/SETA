@@ -45,12 +45,12 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     }
 
     @Override
-    public void startElection(ElectionMsg request, StreamObserver<OKElection> responseObserver) {
-        OKElection response;
+    public void startElection(ElectionMsg request, StreamObserver<OKMsg> responseObserver) {
+        OKMsg response;
         System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " got an election mgs for ride: " + request.getRide().getId());
         // Current taxi is not in the same district, sends back OK
         if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))){
-            response = OKElection.newBuilder().setOk("OK").build();
+            response = OKMsg.newBuilder().setOk("OK").build();
         }else{
             //Current taxi is available and not recharging
             if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().isCharging()){
@@ -59,27 +59,32 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                 if (distance == request.getDistance() ){
                     if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) < 0){
                         //Requesting taxi has greater id, returns KO
-                        response =  OKElection.newBuilder().setOk("KO").build();
+                        response =  OKMsg.newBuilder().setOk("KO").build();
                     }else {
                         //Requesting taxi has higher id or is the same one who sent the request, returns ok
-                        response = OKElection.newBuilder().setOk("OK").build();
+                        response = OKMsg.newBuilder().setOk("OK").build();
                     }
                 }else {
                     if (distance < request.getDistance() ){
                         //Requesting taxi has lower distance, returns ok
-                        response = OKElection.newBuilder().setOk("OK").build();
+                        response = OKMsg.newBuilder().setOk("OK").build();
                     }else {
                         //Requesting taxi has higher distance, returns KO
-                        response =  OKElection.newBuilder().setOk("KO").build();
+                        response =  OKMsg.newBuilder().setOk("KO").build();
                     }
                 }
             }else {
                 //Current taxi is not available, returns ok
-                response = OKElection.newBuilder().setOk("OK").build();
+                response = OKMsg.newBuilder().setOk("OK").build();
             }
         }
         System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " response to election: " + response);
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void startRechargeProcess(RechargeMsg request, StreamObserver<OKMsg> responseObserver) {
+        super.startRechargeProcess(request, responseObserver);
     }
 }

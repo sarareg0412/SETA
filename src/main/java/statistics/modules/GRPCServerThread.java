@@ -1,4 +1,4 @@
-package taxi.modules;
+package statistics.modules;
 
 import io.grpc.ServerBuilder;
 import taxi.Taxi;

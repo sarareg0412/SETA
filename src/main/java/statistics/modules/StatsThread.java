@@ -1,4 +1,4 @@
-package taxi.modules;
+package statistics.modules;
 
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
