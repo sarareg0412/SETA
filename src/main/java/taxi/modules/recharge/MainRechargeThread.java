@@ -80,11 +80,8 @@ public class MainRechargeThread extends Thread{
         ArrayList<Taxi> rechargeList = new ArrayList<>(taxiUtils.getTaxisList());
         taxiUtils.setRechargeCounter(new Counter(rechargeList.size()));
 
-        List<AskRechargeThread> threads = new ArrayList<>();
-
         for (Taxi taxi : rechargeList){
             AskRechargeThread t = new AskRechargeThread(taxi.getTaxiInfo(), rechargeMsg);
-            threads.add(t);
             t.start();
         }
     }

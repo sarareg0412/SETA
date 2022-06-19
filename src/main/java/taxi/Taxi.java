@@ -155,7 +155,7 @@ public class Taxi {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
+                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable() && !taxiUtils.isInElection()) {
                     MainElectionThread electionThread = new MainElectionThread(rideMsg);
                     electionThread.start();
                     electionThread.join();

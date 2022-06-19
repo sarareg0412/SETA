@@ -35,7 +35,7 @@ public class ElectionThread extends Thread{
             TaxiUtils.getInstance().getElectionCounter().addResponse();
         }
         try {
-            channel.awaitTermination(3, TimeUnit.SECONDS);
+            channel.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             System.out.println("> [ERR] An error occurred while waiting for the election channel to shutdown");
         }

@@ -22,10 +22,10 @@ public class AskRechargeThread extends Thread{
 
     @Override
     public void run() {
-        reachOtherTaxi(otherTaxiInfo, rechargeMsg, counter);
+        reachOtherTaxi(otherTaxiInfo, rechargeMsg);
     }
 
-    private void reachOtherTaxi(TaxiInfo other, RechargeMsg electionMessage, Counter counter){
+    private void reachOtherTaxi(TaxiInfo other, RechargeMsg electionMessage){
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         // Blocking stub for the thread waits for the other taxi's response

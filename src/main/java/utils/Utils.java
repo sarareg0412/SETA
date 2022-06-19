@@ -39,9 +39,10 @@ public class Utils {
     public static final double  OVERLAP = 0.5;
 
     public static Position[]    rechargeStations = {  new Position(0,0),
-                                                new Position(0,9),
-                                                new Position(9,0),
-                                                new Position(9,9)};
+                                                        new Position(0,9),
+                                                        new Position(9,9),
+                                                        new Position(9,0)
+                                                };
 
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int                 ELECTION            = 0;
@@ -79,11 +80,11 @@ public class Utils {
         int district = 1;   //default value set to 1
         if (p.getX() < half && p.getY() < half)
             district = 1;
-        if (p.getX() < half && p.getY() >= half)
+        else if (p.getX() < half && p.getY() >= half)
             district = 2;
-        if (p.getX() >= half && p.getY() >= half)
+        else if (p.getX() >= half && p.getY() >= half)
             district = 3;
-        if (p.getX() >= half && p.getY() < half)
+        else if (p.getX() >= half && p.getY() < half)
             district = 4;
         return district;
     }

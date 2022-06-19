@@ -63,6 +63,10 @@ public class MainElectionThread extends Thread{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        if(taxiUtils.getElectionCounter().getResponses() >= taxiUtils.getElectionCounter().getMaxElements() )
+            taxiUtils.setMaster(true);
+
         System.out.println("> [ELEC] Election finished");
 
         if (taxiUtils.isMaster()) {
@@ -91,9 +95,6 @@ public class MainElectionThread extends Thread{
                     || taxiUtils.isInElection()) {
                 taxiUtils.getElectionCounter().getLock().wait();
             }
-
-            if(taxiUtils.getElectionCounter().getResponses() >= taxiUtils.getElectionCounter().getMaxElements() )
-                taxiUtils.setMaster(true);
         }
     }
 
