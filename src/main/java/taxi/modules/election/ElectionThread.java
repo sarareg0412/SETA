@@ -1,4 +1,4 @@
-package taxi.modules;
+package taxi.modules.election;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -31,18 +31,16 @@ public class ElectionThread extends Thread{
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         // Blocking stub for the thread waits for the other taxi's response
         OKMsg response = stub.startElection(electionMessage);
-
+        if (response.getOk().equals("OK")) {
+            TaxiUtils.getInstance().getElectionCounter().addResponse();
+        }
         try {
-            channel.awaitTermination(1, TimeUnit.SECONDS);
+            channel.awaitTermination(3, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             System.out.println("> [ERR] An error occurred while waiting for the election channel to shutdown");
         }
-        if (response.getOk().equals("KO")) {
-            TaxiUtils.getInstance().setMaster(false);
-        }else{   // Election counter updated
-            TaxiUtils.getInstance().setElectionCounter(TaxiUtils.getInstance().getElectionCounter() + 1);
-        }
-        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " counter: " + TaxiUtils.getInstance().getElectionCounter());
+
+        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " counter: " + TaxiUtils.getInstance().getElectionCounter().getResponses());
         channel.shutdown();
     }
 

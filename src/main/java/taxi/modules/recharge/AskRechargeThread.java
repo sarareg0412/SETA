@@ -1,4 +1,4 @@
-package taxi.modules;
+package taxi.modules.recharge;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

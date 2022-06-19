@@ -46,11 +46,14 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
     @Override
     public void startElection(ElectionMsg request, StreamObserver<OKMsg> responseObserver) {
-        OKMsg response;
-        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " got an election mgs for ride: " + request.getRide().getId());
+        System.out.println("OK START ELECTION");
+        String s ="> [ELEC] Got an election request from "+ request.getId() + "for ride: " + request.getRide().getId();
+
         // Current taxi is not in the same district, sends back OK
         if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))){
-            response = OKMsg.newBuilder().setOk("OK").build();
+            System.out.println(s+" RESPONSE: OK");
+            responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+            responseObserver.onCompleted();
         }else{
             //Current taxi is available and not recharging
             if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().isCharging()){
@@ -58,29 +61,26 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                 double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                 if (distance == request.getDistance() ){
                     if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) < 0){
-                        //Requesting taxi has greater id, returns KO
-                        response =  OKMsg.newBuilder().setOk("KO").build();
-                    }else {
                         //Requesting taxi has higher id or is the same one who sent the request, returns ok
-                        response = OKMsg.newBuilder().setOk("OK").build();
+                        System.out.println(s+" RESPONSE: OK");
+                        responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                        responseObserver.onCompleted();
                     }
                 }else {
-                    if (distance < request.getDistance() ){
+                    if (distance < request.getDistance()){
                         //Requesting taxi has lower distance, returns ok
-                        response = OKMsg.newBuilder().setOk("OK").build();
-                    }else {
-                        //Requesting taxi has higher distance, returns KO
-                        response =  OKMsg.newBuilder().setOk("KO").build();
+                        System.out.println(s+" RESPONSE: OK");
+                        responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                        responseObserver.onCompleted();
                     }
                 }
             }else {
                 //Current taxi is not available, returns ok
-                response = OKMsg.newBuilder().setOk("OK").build();
+                System.out.println(s+" RESPONSE: OK");
+                responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                responseObserver.onCompleted();
             }
         }
-        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " response to election: " + response);
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -120,7 +120,16 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     public void sendOkRecharge(OKMsg request, StreamObserver<Empty> responseObserver) {
         // Requesting taxi recharged: adds the missing response to the counter
         TaxiUtils.getInstance().getRechargeCounter().addResponse();
-        System.out.println("> Taxi got OK to recharge from " + request.getId() );
+        System.out.println("> [RECH] Taxi got OK to recharge from " + request.getId() );
+        Empty empty = Empty.newBuilder().build();
+        responseObserver.onNext(empty);     //Sends nothing back to the caller
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void finishElection(OKMsg request, StreamObserver<Empty> responseObserver) {
+        // Election is finished
+        TaxiUtils.getInstance().setInElection(false);
         Empty empty = Empty.newBuilder().build();
         responseObserver.onNext(empty);     //Sends nothing back to the caller
         responseObserver.onCompleted();

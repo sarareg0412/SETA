@@ -44,6 +44,8 @@ public class Utils {
                                                 new Position(9,9)};
 
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+    public static final int                 ELECTION            = 0;
+    public static final int                 RECHARGE            = 1;
 
     /* Given a client and url, send a GET request to that url */
     public static ClientResponse getRequest(Client client, String url){
@@ -150,7 +152,4 @@ public class Utils {
         System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
     }
 
-    public static void printTaxiStatus(Taxi t){
-
-    }
 }

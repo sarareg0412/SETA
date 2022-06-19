@@ -49,8 +49,8 @@ public class Ride {
         this.finish = finish;
     }
 
-    public double getKmToTravel(){
-        return Utils.getDistanceBetweenPositions(start,finish);
+    public double getKmToTravel(Position position){
+        return Utils.getDistanceBetweenPositions(position,start) + Utils.getDistanceBetweenPositions(start,finish);
     }
 
     public RideMsg createRideMsg(){

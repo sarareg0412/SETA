@@ -1,19 +1,18 @@
-package taxi.modules;
+package taxi.modules.recharge;
 
 import taxi.Taxi;
 import taxi.TaxiInfo;
 import taxi.TaxiUtils;
+import taxi.modules.SendOKThread;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
 import utils.Utils;
 
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainRechargeThread extends Thread{
     private TaxiUtils taxiUtils;
-    private Counter counter;                        // Recharge counter
 
     public MainRechargeThread(){
         this.taxiUtils = TaxiUtils.getInstance();
@@ -88,10 +87,6 @@ public class MainRechargeThread extends Thread{
             threads.add(t);
             t.start();
         }
-        // Waits for all threads to finish
-        //for (Thread t : threads){
-        //    t.join();
-        //}
     }
 
     public void waitAllOk() throws InterruptedException {
@@ -108,7 +103,7 @@ public class MainRechargeThread extends Thread{
         if (list.size()>0){
                 System.out.println("> [RECH] Sending all pending OK.");
             for (TaxiInfo otherTaxiInfo : list){
-                SendOKThread t = new SendOKThread(otherTaxiInfo);
+                SendOKThread t = new SendOKThread(otherTaxiInfo, Utils.RECHARGE);
                 t.start();
             }
         System.out.println("> [RECH] Sending completed.");

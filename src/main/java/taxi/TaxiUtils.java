@@ -1,8 +1,7 @@
 package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
-import ride.Ride;
-import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
+import org.eclipse.paho.client.mqttv3.MqttClient;
 import utils.Counter;
 import utils.Position;
 import utils.Queue;
@@ -13,26 +12,29 @@ import java.util.List;
 
 /* Class containing all shared infos between the taxi's threads*/
 public class TaxiUtils {
+    private TaxiInfo                    taxiInfo;                       // Taxi's info: id; port number and address
+    private List<Taxi>                  taxisList;                          // List of other taxis
+    private int                         batteryLevel;                       // Taxi's battery level
+    private Position                    position;                           // Taxi's position
+    private Queue<Double>               measurementAvgQueue;                // Queue of the measurement's averages
 
-    private TaxiInfo taxiInfo;                          // Taxi's info: id; port number and address
-    private List<Taxi> taxisList;                       // List of other taxis
-    private int batteryLevel;                           // Taxi's battery level
-    private Position position;                          // Taxi's position
-    private Queue<Double> measurementAvgQueue;          // Queue of the measurement's averages
+    private MqttClient MQTTClient;
+    private int qos;
 
-    private boolean isAvailable;                        // Taxi is available to take the ride
-    private boolean isCharging;                         // Taxi is currently recharging
-    private boolean isElected;                          // Taxi is elected and can take the rida
+    private boolean                     isAvailable;                        // Taxi is available to take the ride
 
-    private boolean wantsToCharge;                      // Taxi wants to charge
-    private final Object  wantsToChargeLock;            // Wants to charge lock
-    private Counter rechargeCounter;                    // Counter for # of taxi participating
-    private long rechargeTimestamp;
-    private Queue<TaxiInfo> rechargeRequests;        // Queue of recharging requests
+    private boolean                     isCharging;                         // Taxi is currently recharging
+    private boolean                     wantsToCharge;                      // Taxi wants to charge
+    private final Object                wantsToChargeLock;                  // Wants to charge lock
+    private Counter                     rechargeCounter;                    // Counter for # of taxi participating
+    private long                        rechargeTimestamp;
+    private Queue<TaxiInfo>             rechargeRequests;                   // Queue of recharging requests
 
-    private int electionCounter;                        // Number of responses gotten for the election
-    private boolean isMaster;                           // Taxi is selected to take the ride
-    private boolean quit;                               //Taxi wants to leave the network
+    private Counter                     electionCounter;                    // Number of responses gotten for the election
+    private boolean                     inElection;                         // Taxi currently in election
+    private boolean                     isMaster;                           // Taxi is selected to take the ride
+
+    private boolean                     quit;                               //Taxi wants to leave the network
 
     private static TaxiUtils instance;
 
@@ -113,14 +115,6 @@ public class TaxiUtils {
         isCharging = charging;
     }
 
-    public synchronized boolean isElected() {
-        return isElected;
-    }
-
-    public synchronized void setElected(boolean elected) {
-        isElected = elected;
-    }
-
     public void addAvgToQueue(double avg){
         measurementAvgQueue.put(avg);
     }
@@ -133,11 +127,19 @@ public class TaxiUtils {
         return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
     }
 
-    public synchronized int getElectionCounter() {
+    public synchronized boolean isInElection() {
+        return inElection;
+    }
+
+    public synchronized void setInElection(boolean inElection) {
+        this.inElection = inElection;
+    }
+
+    public synchronized Counter getElectionCounter() {
         return electionCounter;
     }
 
-    public synchronized void setElectionCounter(int electionCounter) {
+    public synchronized void setElectionCounter(Counter electionCounter) {
         this.electionCounter = electionCounter;
     }
 
@@ -199,6 +201,22 @@ public class TaxiUtils {
 
     public synchronized void setRechargeRequests(Queue<TaxiInfo> rechargeRequests) {
         this.rechargeRequests = rechargeRequests;
+    }
+
+    public MqttClient getMQTTClient() {
+        return MQTTClient;
+    }
+
+    public void setMQTTClient(MqttClient MQTTClient) {
+        this.MQTTClient = MQTTClient;
+    }
+
+    public int getQos() {
+        return qos;
+    }
+
+    public void setQos(int qos) {
+        this.qos = qos;
     }
 
     @Override

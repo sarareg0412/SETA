@@ -6,7 +6,7 @@ import exceptions.taxi.TaxiNotFoundException;
 import statistics.Stats;
 import statistics.StatsResponse;
 import taxi.TaxiInfo;
-import taxi.TaxiResponse;
+import REST.TaxiResponse;
 import utils.Utils;
 
 import javax.ws.rs.HttpMethod;

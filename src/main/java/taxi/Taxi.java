@@ -1,5 +1,6 @@
 package taxi;
 
+import REST.TaxiResponse;
 import com.google.gson.Gson;
 import com.google.protobuf.Empty;
 import com.google.protobuf.TextFormat;
@@ -19,6 +20,9 @@ import simulator.PM10Simulator;
 import statistics.Stats;
 import statistics.modules.*;
 import taxi.modules.*;
+import taxi.modules.election.ElectionThread;
+import taxi.modules.election.MainElectionThread;
+import taxi.modules.recharge.MainRechargeThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
@@ -41,9 +45,7 @@ public class Taxi {
     private TaxiUtils taxiUtils;                        // Taxi's infos and list of other taxis shared between the taxi's thread
 
     //Ride district subscription
-    private MqttClient MQTTClient;
     private Client RESTClient;
-    private int qos;
 
     private PM10Simulator pm10Simulator;
     //Threads
@@ -138,13 +140,13 @@ public class Taxi {
     }
 
     public void initMqttComponents() throws MqttException {
-        MQTTClient = new MqttClient(Utils.MQTTBrokerAddress, taxiInfo.getId());
-        qos = 2;
+        taxiUtils.setMQTTClient(new MqttClient(Utils.MQTTBrokerAddress, taxiInfo.getId()));
+        taxiUtils.setQos(2);
         MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
-        MQTTClient.connect(connOpts);
+        taxiUtils.getMQTTClient().connect(connOpts);
 
-        MQTTClient.setCallback(new MqttCallback() {
+        taxiUtils.getMQTTClient().setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
 
@@ -152,11 +154,14 @@ public class Taxi {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                String time = new Timestamp(System.currentTimeMillis()).toString();
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                 if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
-                    System.out.println("> NEW RIDE REQUEST " + TextFormat.shortDebugString(rideMsg));
-                    startElection(rideMsg);
+                    MainElectionThread electionThread = new MainElectionThread(rideMsg);
+                    electionThread.start();
+                    electionThread.join();
+                    if (taxiUtils.isMaster()) {
+                        takeRide(new Ride(rideMsg));
+                    }
                 }
             }
 
@@ -309,99 +314,40 @@ public class Taxi {
         channel.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    public void startElection(RideMsg rideMsg) throws MqttException {
-        //The message to send is created only once
-        ElectionMsg electionMessage = ElectionMsg.newBuilder()
-                .setId(taxiInfo.getId())
-                .setDistance(Utils.getDistanceBetweenPositions(taxiUtils.getPosition(),
-                                                                Utils.getPositionFromPositionMsg(rideMsg.getStart())))
-                .setBattery(taxiUtils.getBatteryLevel())
-                .setRide(rideMsg)
-                .build();
-
-        taxiUtils.setElectionCounter(0);
-        taxiUtils.setMaster(true);
-
-        //TODO check synchronization for getTaxiList()
-        ArrayList<ElectionThread> electionThreadList = new ArrayList<>();
-        for (Taxi otherTaxi : TaxiUtils.getInstance().getTaxisList()) {
-            // A new thread is created for the taxi to broadcasts the others and
-            // itself to see to pick the master to take the ride
-            ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage);
-            electionThreadList.add(electionThread);
-        }
-        // Starts all threads
-        for (ElectionThread t : electionThreadList){
-            t.start();
-        }
-
-        /* Waits for all threads to finish their execution */
-        for (ElectionThread thread : electionThreadList){
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        System.out.println("> Election finished");
-        // The current taxi was elected by the others to take the ride
-        Ride ride = new Ride(rideMsg);
-
-        // TODO this condition fails when you add a taxi before the election is completed
-        if (TaxiUtils.getInstance().isMaster()){
-            try {
-                System.out.println("> Taxi "+taxiInfo.getId()+" is taking the ride " + ride.getId());
-                publishTakenRide(rideMsg);
-                takeRide(ride);
-            } catch (MqttException e) {
-                System.out.println("> An error occurred while taking the ride. ");
-            }
-        }
+    /* Notifies SETA that it is available */
+    public void publishAvailable() throws MqttException {
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(taxiUtils.getQos());
+        taxiUtils.getMQTTClient().publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
+        System.out.println("> TAXI AVAILABLE Correctly notified SETA");
     }
 
     public void takeRide(Ride ride) throws MqttException {
-        taxiUtils.setAvailable(false);
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
+        Position oldPosition = taxiUtils.getPosition();
         //Taxi subscribes to new distric topic if necessary
-        if (Utils.getDistrictFromPosition(taxiUtils.getPosition()) != Utils.getDistrictFromPosition(ride.getFinish())) {
-            unsubscribe(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
-            Utils.publishUnavailable(MQTTClient, qos);
+        if (Utils.getDistrictFromPosition(oldPosition) != Utils.getDistrictFromPosition(ride.getFinish())) {
+            unsubscribe(Utils.getDistrictTopicFromPosition(oldPosition));
+            Utils.publishUnavailable(taxiUtils.getMQTTClient(), taxiUtils.getQos());
             subscribeToTopic(Utils.getDistrictTopicFromPosition(ride.getFinish()));
             publishAvailable();
         }
         // Taxi completed the ride; changes position
         taxiUtils.setPosition(ride.getFinish());
         // Taxi battery level decreases
-        taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel()));
+        taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
-        addStatsToQueue(ride.getKmToTravel());
         taxiUtils.setAvailable(true);
+        addStatsToQueue(ride.getKmToTravel(oldPosition));
         System.out.println("> RIDE COMPLETED " + ride.getId());
+        taxiUtils.setInElection(false);
+        taxiUtils.setMaster(false);
     }
-
-    /* Sends back an mqtt message to SETA that the ride couldn't be taken by any taxi */
-    public void publishTakenRide(RideMsg ride) throws MqttException {
-        //Seta starts creating the rides with a positive random id
-        MqttMessage msg = new MqttMessage(ride.toByteArray());
-        msg.setQos(qos);
-        MQTTClient.publish(Utils.TAKEN_RIDE, msg);
-        System.out.println("> Taken ride published:" + ride);
-    }
-
-    /* Notifies SETA that it is available */
-    public void publishAvailable() throws MqttException {
-        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
-        msg.setQos(qos);
-        MQTTClient.publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.println("> TAXI AVAILABLE Correctly notified SETA");
-    }
-
 
 
     public void addStatsToQueue(double km){
@@ -412,12 +358,12 @@ public class Taxi {
     }
 
     private void unsubscribe(String topic) throws MqttException {
-        MQTTClient.unsubscribe(topic);
+        taxiUtils.getMQTTClient().unsubscribe(topic);
         System.out.println("> Taxi unsubscribed from topic : " + topic + "\n");
     }
 
     private void subscribeToTopic(String topic) throws MqttException {
-        MQTTClient.subscribe(topic, qos);
+        taxiUtils.getMQTTClient().subscribe(topic, taxiUtils.getQos());
         System.out.println("> Taxi subscribed to topic : " + topic + "\n");
     }
 

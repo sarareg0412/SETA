@@ -1,7 +1,8 @@
-package taxi;
+package REST;
 
 import exceptions.taxi.TaxiAlreadyPresentException;
 import exceptions.taxi.TaxiNotFoundException;
+import taxi.TaxiInfo;
 import utils.Utils;
 
 import java.util.ArrayList;
