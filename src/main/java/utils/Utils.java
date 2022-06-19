@@ -149,4 +149,8 @@ public class Utils {
         client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(TaxiUtils.getInstance().getPosition()), msg);
         System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
     }
+
+    public static void printTaxiStatus(Taxi t){
+
+    }
 }

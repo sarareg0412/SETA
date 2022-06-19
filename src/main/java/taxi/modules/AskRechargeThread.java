@@ -24,18 +24,20 @@ public class AskRechargeThread extends Thread{
     public void run() {
         reachOtherTaxi(otherTaxiInfo, rechargeMsg, counter);
     }
+
     private void reachOtherTaxi(TaxiInfo other, RechargeMsg electionMessage, Counter counter){
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         // Blocking stub for the thread waits for the other taxi's response
         OKMsg response = stub.askRecharge(electionMessage);
-
+        if (response.getOk().equals("OK")) {
+            TaxiUtils.getInstance().getRechargeCounter().addResponse();
+        }
         try {
             channel.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            System.out.println("> [ERR] An error occurred while waiting for the recharging channel request to shutdown");
+            System.out.println("> [RECH] [ERR] An error occurred while waiting for the recharging channel request to shutdown");
         }
-
-        System.out.println("> Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " counter: " + TaxiUtils.getInstance().getRechargeCounter().getResponses());
+        channel.shutdown();
     }
 }

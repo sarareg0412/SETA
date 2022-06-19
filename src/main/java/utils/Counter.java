@@ -4,18 +4,19 @@ public class Counter {
 
     private int maxElements;
     private int responses;
-    private Object lock;
+    private final Object lock;
 
     public Counter(int maxElements) {
         this.maxElements = maxElements;
         this.responses = 0;
+        this.lock = new Object();
     }
 
-    public synchronized void addResponse(){
-//        synchronized (lock){
+    public void addResponse(){
+        synchronized (lock){
             responses++;
-            notifyAll();
-//        }
+            lock.notifyAll();
+        }
     }
 
     public synchronized Object getLock() {
@@ -27,7 +28,8 @@ public class Counter {
     }
 
     public synchronized int getResponses() {
-        return responses;
+        synchronized (lock) {
+            return responses;
+        }
     }
-
 }

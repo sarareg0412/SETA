@@ -85,20 +85,44 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
     @Override
     public void askRecharge(RechargeMsg request, StreamObserver<OKMsg> responseObserver) {
-
-        // Current Taxi is not charging and doesn't want to, sends OK
-        if (!TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()){
+        String s ="> [RECH] Got a request to recharge from "+ request.getTaxiInfoMsg().getId();
+        if (request.getTaxiInfoMsg().getId().equals(TaxiUtils.getInstance().getTaxiInfo().getId())){
+            System.out.println(s+" RESPONSE: OK");
             responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-        }else if (TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()){
-            if (request.getTimestamp() <= TaxiUtils.getInstance().getRechargeTimestamp()){
-                // Request has lesser or equal timestamp
+            responseObserver.onCompleted();
+        }else {
+            // Current Taxi is not charging and doesn't want to, sends OK
+            if (!TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()) {
+                System.out.println(s+" RESPONSE: OK");
                 responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-
-            }else {
-                //ACCODO LA RICHIESTA
+                responseObserver.onCompleted();
+            } else if (TaxiUtils.getInstance().wantsToCharge() && !TaxiUtils.getInstance().isCharging()) {
+                // Current taxi wants to charge but is not charging yet
+                if (request.getTimestamp() <= TaxiUtils.getInstance().getRechargeTimestamp()) {
+                    System.out.println(s+" RESPONSE: OK");
+                    // Request has lesser or equal timestamp
+                    responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                    responseObserver.onCompleted();
+                } else {
+                    System.out.println(s+" QUEUING REQUEST.");
+                    // Request has greater timestamp, add it to the queue
+                    TaxiUtils.getInstance().getRechargeRequests().put(new TaxiInfo(request.getTaxiInfoMsg().getId(), request.getTaxiInfoMsg().getPort(), request.getTaxiInfoMsg().getAddress()));
+                }
+            } else if (TaxiUtils.getInstance().isCharging()) {
+                System.out.println(s+" QUEUING REQUEST.");
+                // Current Taxi is currently charging and got a request, add it to the queue
+                TaxiUtils.getInstance().getRechargeRequests().put(new TaxiInfo(request.getTaxiInfoMsg().getId(), request.getTaxiInfoMsg().getPort(), request.getTaxiInfoMsg().getAddress()));
             }
         }
+    }
 
+    @Override
+    public void sendOkRecharge(OKMsg request, StreamObserver<Empty> responseObserver) {
+        // Requesting taxi recharged: adds the missing response to the counter
+        TaxiUtils.getInstance().getRechargeCounter().addResponse();
+        System.out.println("> Taxi got OK to recharge from " + request.getId() );
+        Empty empty = Empty.newBuilder().build();
+        responseObserver.onNext(empty);     //Sends nothing back to the caller
         responseObserver.onCompleted();
     }
 }

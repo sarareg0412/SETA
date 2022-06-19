@@ -2,6 +2,7 @@ package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
 import ride.Ride;
+import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
 import utils.Position;
 import utils.Queue;
@@ -23,10 +24,11 @@ public class TaxiUtils {
     private boolean isCharging;                         // Taxi is currently recharging
     private boolean isElected;                          // Taxi is elected and can take the rida
 
-    private boolean wantsToCharge;                       // Taxi wants to charge
-    private final Object  wantsToChargeLock;                // Wants to charge lock
+    private boolean wantsToCharge;                      // Taxi wants to charge
+    private final Object  wantsToChargeLock;            // Wants to charge lock
     private Counter rechargeCounter;                    // Counter for # of taxi participating
     private long rechargeTimestamp;
+    private Queue<TaxiInfo> rechargeRequests;        // Queue of recharging requests
 
     private int electionCounter;                        // Number of responses gotten for the election
     private boolean isMaster;                           // Taxi is selected to take the ride
@@ -39,6 +41,7 @@ public class TaxiUtils {
         this.position = new Position();
         this.measurementAvgQueue = new Queue<>();
         this.wantsToChargeLock = new Object();
+        this.rechargeRequests = new Queue<>();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -188,5 +191,21 @@ public class TaxiUtils {
 
     public void setQuit(boolean quit) {
         this.quit = quit;
+    }
+
+    public synchronized Queue<TaxiInfo> getRechargeRequests() {
+        return rechargeRequests;
+    }
+
+    public synchronized void setRechargeRequests(Queue<TaxiInfo> rechargeRequests) {
+        this.rechargeRequests = rechargeRequests;
+    }
+
+    @Override
+    public String toString() {
+        return "> Taxi" + getTaxiInfo().getId() + " status: \n"
+                + "D" + Utils.getDistrictFromPosition(getPosition()) +"; "
+                + getPosition() +"; "
+                + getBatteryLevel() +"%;";
     }
 }

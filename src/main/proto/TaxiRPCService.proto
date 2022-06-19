@@ -19,10 +19,11 @@ message ElectionMsg{
 
 message RechargeMsg{
   int64 timestamp = 1;
-  string id = 2;
+  TaxiInfoMsg taxiInfoMsg = 2;
 }
 
 message OKMsg{
+  string id = 2;
   string ok = 1;
 }
 
@@ -31,4 +32,5 @@ service TaxiRPCService {
   rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
   rpc startElection(ElectionMsg) returns (OKMsg);
   rpc askRecharge(RechargeMsg) returns (OKMsg);
+  rpc sendOkRecharge(OKMsg) returns (google.protobuf.Empty);
 }
