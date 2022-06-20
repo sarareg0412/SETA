@@ -22,6 +22,7 @@ import statistics.modules.*;
 import taxi.modules.*;
 import taxi.modules.election.ElectionThread;
 import taxi.modules.election.MainElectionThread;
+import taxi.modules.recharge.CheckBatteryThread;
 import taxi.modules.recharge.MainRechargeThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
@@ -53,6 +54,7 @@ public class Taxi {
     private StatsThread statsThread;
     private StdInThread stdInThread;
     private MainRechargeThread mainRechargeThread;
+    private CheckBatteryThread checkBatteryThread;
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -122,6 +124,7 @@ public class Taxi {
             e.printStackTrace();
         }
         mainRechargeThread.start();     // Start thread to recharge
+        checkBatteryThread.start();
         stdInThread.start();             // Start thread to exit in a controlled way
 
         while (true) {
@@ -155,7 +158,10 @@ public class Taxi {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable() && !taxiUtils.isInElection()) {
+                while (taxiUtils.isInElection()){
+                    taxiUtils.getInElectionLock().wait();
+                }
+                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
                     MainElectionThread electionThread = new MainElectionThread(rideMsg);
                     electionThread.start();
                     electionThread.join();
@@ -179,6 +185,7 @@ public class Taxi {
         taxiUtils.setBatteryLevel(Utils.MAX_BATTERY);       // Taxi initialized with max battery
         taxiUtils.setAvailable(true);                       // Taxi is set available to take rides
         taxiUtils.setCharging(false);                       // Taxi is not recharging
+        taxiUtils.setInElection(false);                     // Taxi is not in election
     }
 
     public void initThreads(){
@@ -188,6 +195,7 @@ public class Taxi {
         statsThread = new StatsThread();
         pm10Simulator = new PM10Simulator(new MeasurementsBuffer());
         mainRechargeThread = new MainRechargeThread();
+        checkBatteryThread = new CheckBatteryThread();
     }
 
     public void initTaxi(){
@@ -322,6 +330,14 @@ public class Taxi {
         System.out.println("> TAXI AVAILABLE Correctly notified SETA");
     }
 
+    /* Notifies SETA that taxi is not available anymore in that district */
+    public static void publishUnavailable(Position p, MqttClient client, int qos) throws MqttException {
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(p), msg);
+        System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
+    }
+
     public void takeRide(Ride ride) throws MqttException {
         try {
             Thread.sleep(5000);
@@ -330,23 +346,24 @@ public class Taxi {
         }
 
         Position oldPosition = taxiUtils.getPosition();
+        // Taxi completed the ride; changes position
+        taxiUtils.setPosition(ride.getFinish());
+
         //Taxi subscribes to new distric topic if necessary
         if (Utils.getDistrictFromPosition(oldPosition) != Utils.getDistrictFromPosition(ride.getFinish())) {
             unsubscribe(Utils.getDistrictTopicFromPosition(oldPosition));
-            Utils.publishUnavailable(taxiUtils.getMQTTClient(), taxiUtils.getQos());
-            subscribeToTopic(Utils.getDistrictTopicFromPosition(ride.getFinish()));
+            publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
+            subscribeToTopic(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
             publishAvailable();
         }
-        // Taxi completed the ride; changes position
-        taxiUtils.setPosition(ride.getFinish());
         // Taxi battery level decreases
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
         taxiUtils.setAvailable(true);
-        addStatsToQueue(ride.getKmToTravel(oldPosition));
-        System.out.println("> RIDE COMPLETED " + ride.getId());
         taxiUtils.setInElection(false);
         taxiUtils.setMaster(false);
+        System.out.println("> [ELEC] RIDE COMPLETED " + ride.getId());
+        addStatsToQueue(ride.getKmToTravel(oldPosition));
     }
 
 
@@ -359,12 +376,12 @@ public class Taxi {
 
     private void unsubscribe(String topic) throws MqttException {
         taxiUtils.getMQTTClient().unsubscribe(topic);
-        System.out.println("> Taxi unsubscribed from topic : " + topic + "\n");
+        System.out.println("> Taxi unsubscribed from topic : " + topic);
     }
 
     private void subscribeToTopic(String topic) throws MqttException {
         taxiUtils.getMQTTClient().subscribe(topic, taxiUtils.getQos());
-        System.out.println("> Taxi subscribed to topic : " + topic + "\n");
+        System.out.println("> Taxi subscribed to topic : " + topic);
     }
 
     public TaxiInfo getTaxiInfo() {

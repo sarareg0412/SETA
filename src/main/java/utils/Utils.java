@@ -47,6 +47,7 @@ public class Utils {
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int                 ELECTION            = 0;
     public static final int                 RECHARGE            = 1;
+    public static final int                 MIN_BATTERY_LEVEL   = 30;
 
     /* Given a client and url, send a GET request to that url */
     public static ClientResponse getRequest(Client client, String url){
@@ -143,14 +144,6 @@ public class Utils {
 
     public static double getDistanceFromRechargeStation(Position p){
         return getDistanceBetweenPositions(p, getNearestStationPosition(p));
-    }
-
-    /* Notifies SETA that taxi is not available anymore in that district */
-    public static void publishUnavailable(MqttClient client, int qos) throws MqttException {
-        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
-        msg.setQos(qos);
-        client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(TaxiUtils.getInstance().getPosition()), msg);
-        System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
     }
 
 }

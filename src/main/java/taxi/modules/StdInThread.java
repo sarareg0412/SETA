@@ -56,7 +56,11 @@ public class StdInThread extends Thread {
                     System.exit(0);
                     break;
                 case 2:
-                    TaxiUtils.getInstance().setWantsToCharge(true);
+                    if (TaxiUtils.getInstance().wantsToCharge() || TaxiUtils.getInstance().isCharging()){
+                        System.out.println("> Recharging process is already in place.");
+                    }else
+                        TaxiUtils.getInstance().setWantsToCharge(true);
+
                     break;
             }
         }

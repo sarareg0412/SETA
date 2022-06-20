@@ -19,6 +19,7 @@ import java.util.Objects;
 public class MainElectionThread extends Thread{
     TaxiUtils taxiUtils;
     RideMsg rideMsg;
+    Counter electionCounter;
 
     public MainElectionThread(RideMsg rideMsg) {
         this.taxiUtils = TaxiUtils.getInstance();
@@ -48,12 +49,12 @@ public class MainElectionThread extends Thread{
 
         List<Taxi> others = new ArrayList<>(taxiUtils.getTaxisList());
         //Election counter set to current # of taxis in the network
-        taxiUtils.setElectionCounter(new Counter(others.size()));
+        electionCounter = new Counter(others.size());
 
         for (Taxi otherTaxi : others) {
             // A new thread is created for the taxi to broadcasts the others and
             // itself to see to pick the master to take the ride
-            ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage);
+            ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage, electionCounter);
             electionThread.start();
         }
 
@@ -64,21 +65,25 @@ public class MainElectionThread extends Thread{
             e.printStackTrace();
         }
 
-        if(taxiUtils.getElectionCounter().getResponses() >= taxiUtils.getElectionCounter().getMaxElements() )
+        System.out.println("> [ELEC] Election finished");
+
+        if(electionCounter.getResponses() >= electionCounter.getMaxElements() )
             taxiUtils.setMaster(true);
 
-        System.out.println("> [ELEC] Election finished");
 
         if (taxiUtils.isMaster()) {
             // The current taxi was elected by the others to take the ride
             taxiUtils.setAvailable(false);
             // Current taxi has to free the others
             System.out.println("> [ELEC] Taxi " + taxiUtils.getTaxiInfo().getId() + " is taking the ride " + rideMsg.getId());
-            System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
-            for (Taxi other : others){
-                if (!other.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId())){
-                    SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION);
-                    thread.start();
+            others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
+            if (others.size() > 0) {
+                System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
+                for (Taxi other : others) {
+                    //if (!other.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId())) {
+                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION);
+                        thread.start();
+                    //}
                 }
             }
             try {
@@ -90,10 +95,9 @@ public class MainElectionThread extends Thread{
     }
 
     public void waitAllOk() throws InterruptedException {
-        synchronized (taxiUtils.getElectionCounter().getLock()) {
-            while (taxiUtils.getElectionCounter().getResponses() < taxiUtils.getElectionCounter().getMaxElements()
-                    || taxiUtils.isInElection()) {
-                taxiUtils.getElectionCounter().getLock().wait();
+        synchronized (electionCounter.getLock()) {
+            while (electionCounter.getResponses() < electionCounter.getMaxElements()) {
+                electionCounter.getLock().wait();
             }
         }
     }

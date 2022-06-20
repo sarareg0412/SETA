@@ -22,6 +22,7 @@ public class TaxiUtils {
     private int qos;
 
     private boolean                     isAvailable;                        // Taxi is available to take the ride
+    private Object                      availableLock;                      // Available's lock
 
     private boolean                     isCharging;                         // Taxi is currently recharging
     private boolean                     wantsToCharge;                      // Taxi wants to charge
@@ -30,8 +31,9 @@ public class TaxiUtils {
     private long                        rechargeTimestamp;
     private Queue<TaxiInfo>             rechargeRequests;                   // Queue of recharging requests
 
-    private Counter                     electionCounter;                    // Number of responses gotten for the election
     private boolean                     inElection;                         // Taxi currently in election
+    private Object                      inElectionLock;                      // Available's lock
+
     private boolean                     isMaster;                           // Taxi is selected to take the ride
 
     private boolean                     quit;                               //Taxi wants to leave the network
@@ -42,8 +44,10 @@ public class TaxiUtils {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
         this.measurementAvgQueue = new Queue<>();
-        this.wantsToChargeLock = new Object();
         this.rechargeRequests = new Queue<>();
+        this.wantsToChargeLock = new Object();
+        this.availableLock = new Object();
+        this.inElectionLock = new Object();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -99,12 +103,20 @@ public class TaxiUtils {
             taxisList.remove(index);
     }
 
-    public synchronized boolean isAvailable() {
-        return isAvailable;
+    public boolean isAvailable() {
+        synchronized (availableLock) {
+            return isAvailable;
+        }
     }
 
     public synchronized void setAvailable(boolean available) {
-        isAvailable = available;
+        synchronized (availableLock) {
+            isAvailable = available;
+            if (isAvailable){
+                // Notifies all that the taxi is now available
+                availableLock.notifyAll();
+            }
+        }
     }
 
     public synchronized boolean isCharging() {
@@ -127,20 +139,23 @@ public class TaxiUtils {
         return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
     }
 
-    public synchronized boolean isInElection() {
-        return inElection;
+    public boolean isInElection() {
+        synchronized (inElectionLock) {
+            return inElection;
+        }
     }
 
-    public synchronized void setInElection(boolean inElection) {
-        this.inElection = inElection;
+    public void setInElection(boolean inElection) {
+        synchronized (inElectionLock) {
+            this.inElection = inElection;
+            if (!inElection){
+                inElectionLock.notifyAll();
+            }
+        }
     }
 
-    public synchronized Counter getElectionCounter() {
-        return electionCounter;
-    }
-
-    public synchronized void setElectionCounter(Counter electionCounter) {
-        this.electionCounter = electionCounter;
+    public Object getInElectionLock() {
+        return inElectionLock;
     }
 
     public boolean isMaster() {
