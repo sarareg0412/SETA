@@ -72,7 +72,6 @@ public class SetaUtils {
 
             rideList.add(ride);
             pendingRides.put(distr, rideList);
-            System.out.println("> Pending ride " + ride.getId() + " added to list ");
         }
     }
 

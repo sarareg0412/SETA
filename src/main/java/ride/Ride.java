@@ -74,4 +74,9 @@ public class Ride {
     public synchronized void setSent(boolean sent) {
         this.sent = sent;
     }
+
+    @Override
+    public String toString() {
+        return id + " " + start + " " + finish ;
+    }
 }

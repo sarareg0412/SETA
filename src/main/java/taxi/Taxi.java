@@ -77,7 +77,7 @@ public class Taxi {
             try {
                 // The taxi requests to join the network
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
-                System.out.println("> Taxi added with position: " + taxiResponse.getPosition() + "\n");
+                System.out.println("> [INS] Taxi added with position: " + taxiResponse.getPosition());
                 initTaxiUtils(taxiResponse.getPosition());
                 initThreads();
 
@@ -97,17 +97,17 @@ public class Taxi {
                     for (TaxiInfo otherTaxiInfo : taxiResponse.getTaxiInfoList()) {
                         Taxi other = new Taxi(otherTaxiInfo);
                         taxiUtils.addNewTaxiToList(other);          // The taxi's list is updated
-                        System.out.println("> Taxi present : " + otherTaxiInfo.getId() + "\n");
                         // The taxi notifies the others that it is now part of the network
                         notifyOtherTaxi(newTaxiMsg, otherTaxiInfo);
                     }
                 }
                 taxiUtils.addNewTaxiToList(this);           //The taxi's list now contains itself
+                System.out.println("> [INS] Taxi list : " + Utils.printTaxiList(taxiUtils.getTaxisList()));
                 initComplete = true;
             } catch (TaxiAlreadyPresentException e) {
-                System.out.println(e.getMessage() + "\n");
+                System.out.println(e.getMessage());
             } catch (Exception e) {
-                System.out.println(e.getMessage() + "\n");
+                System.out.println(e.getMessage());
             }
         }while (!initComplete);
 
@@ -158,15 +158,17 @@ public class Taxi {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                while (taxiUtils.isInElection()){
-                    taxiUtils.getInElectionLock().wait();
-                }
-                if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
-                    MainElectionThread electionThread = new MainElectionThread(rideMsg);
-                    electionThread.start();
-                    electionThread.join();
-                    if (taxiUtils.isMaster()) {
-                        takeRide(new Ride(rideMsg));
+                if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
+                    while (taxiUtils.isInElection()) {
+                        taxiUtils.getInElectionLock().wait();
+                    }
+                    if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
+                        MainElectionThread electionThread = new MainElectionThread(rideMsg);
+                        electionThread.start();
+                        electionThread.join();
+                        if (taxiUtils.isMaster()) {
+                            takeRide(new Ride(rideMsg));
+                        }
                     }
                 }
             }
@@ -204,7 +206,7 @@ public class Taxi {
         boolean check = true;
 
         while(check) {
-            System.out.println("> Insert Taxi ID: \n");
+            System.out.println("> Insert Taxi ID:");
 
             try {
 
@@ -215,16 +217,16 @@ public class Taxi {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.println("> Please insert a valid ID. \n");
+                System.out.println("> Please insert a valid ID.");
             }catch (Exception e){
-                System.out.println("> An error occurred. Please insert a value\n");
+                System.out.println("> An error occurred. Please insert a value");
             }
         }
 
         check = true;
 
         while(check) {
-            System.out.println("> Insert port number: \n");
+            System.out.println("> Insert port number:");
 
             try {
                 String s = inFromUser.readLine();
@@ -234,14 +236,14 @@ public class Taxi {
                 }else
                     throw new IOException();
             }catch (Exception e){
-                System.out.println("> Not a number. Please insert Integer Value\n");
+                System.out.println("> Not a number. Please insert Integer Value");
             }
         }
 
         check = true;
 
         while(check) {
-            System.out.println("> Insert address: \n");
+            System.out.println("> Insert address: ");
 
             try {
                 taxiInfo.setAddress(inFromUser.readLine());
@@ -251,9 +253,9 @@ public class Taxi {
                     throw new IOException();
 
             }catch (IOException e){
-                System.out.println("> Please insert a valid address. \n");
+                System.out.println("> Please insert a valid address. ");
             }catch (Exception e){
-                System.out.println("> An error occurred. Please insert a value\n");
+                System.out.println("> An error occurred. Please insert a value");
             }
         }
     }
@@ -300,26 +302,14 @@ public class Taxi {
     public void notifyOtherTaxi(TaxiInfoMsg request , TaxiInfo other) throws InterruptedException {
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
 
-        TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
-
-        stub.addTaxi(request, new StreamObserver<Empty>() {
-            @Override
-            public void onNext(Empty value) {
-                // The current taxi correctly notified the others
-                System.out.println("> Other taxis correctly reached. Taxi " + taxiInfo.getId() + " list : " + Utils.printTaxiList(taxiUtils.getTaxisList()));
-            }
-
-            @Override
-            public void onError(Throwable t) {
-
-            }
-
-            @Override
-            public void onCompleted() {
-                channel.shutdown();
-            }
-        });
-        channel.awaitTermination(1, TimeUnit.SECONDS);
+        TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
+        Empty result = stub.addTaxi(request);
+        try {
+            channel.awaitTermination(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            System.out.println("> [INS] [ERR] An error occurred while notifying other taxis.");
+        }
+        channel.shutdown();
     }
 
     /* Notifies SETA that it is available */
@@ -327,7 +317,7 @@ public class Taxi {
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(taxiUtils.getQos());
         taxiUtils.getMQTTClient().publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        System.out.println("> TAXI AVAILABLE Correctly notified SETA");
+        //System.out.println("> TAXI AVAILABLE Correctly notified SETA");
     }
 
     /* Notifies SETA that taxi is not available anymore in that district */
@@ -335,7 +325,7 @@ public class Taxi {
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(qos);
         client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(p), msg);
-        System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
+        //System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
     }
 
     public void takeRide(Ride ride) throws MqttException {

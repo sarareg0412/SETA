@@ -79,12 +79,16 @@ public class MainElectionThread extends Thread{
             others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
             if (others.size() > 0) {
                 System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
+                FinishElectionMsg msg = FinishElectionMsg.newBuilder()
+                        .setOk("OK")
+                        .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
+                        .setRideId(rideMsg.getId())
+                        .build();
                 for (Taxi other : others) {
-                    //if (!other.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId())) {
-                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION);
+                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION, msg);
                         thread.start();
-                    //}
                 }
+                //Join ?
             }
             try {
                 publishTakenRide(rideMsg);
@@ -104,11 +108,9 @@ public class MainElectionThread extends Thread{
 
     /* Sends back an mqtt message to SETA that the ride was taken */
     public void publishTakenRide(RideMsg ride) throws MqttException {
-        //Seta starts creating the rides with a positive random id
         MqttMessage msg = new MqttMessage(ride.toByteArray());
         msg.setQos(taxiUtils.getQos());
         taxiUtils.getMQTTClient().publish(Utils.TAKEN_RIDE, msg);
-        System.out.println("> [ELEC] Taken ride published:" + TextFormat.shortDebugString(ride));
     }
 
 }

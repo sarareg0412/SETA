@@ -96,11 +96,11 @@ public class MainRechargeThread extends Thread{
 
     public void sendAllPendingOK(){
         List<TaxiInfo> list = new ArrayList<TaxiInfo>(taxiUtils.getRechargeRequests().getAllAndEmptyQueue());
-
+        OKMsg msg = OKMsg.newBuilder().setOk("OK").setId(TaxiUtils.getInstance().getTaxiInfo().getId()).build();
         if (list.size()>0){
                 System.out.println("> [RECH] Sending all pending OK.");
             for (TaxiInfo otherTaxiInfo : list){
-                SendOKThread t = new SendOKThread(otherTaxiInfo, Utils.RECHARGE);
+                SendOKThread t = new SendOKThread(otherTaxiInfo, Utils.RECHARGE, msg);
                 t.start();
             }
         System.out.println("> [RECH] Sending completed.");

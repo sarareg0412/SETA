@@ -23,8 +23,14 @@ message RechargeMsg{
 }
 
 message OKMsg{
-  string id = 2;
   string ok = 1;
+  string id = 2;
+}
+
+message FinishElectionMsg{
+  string ok = 1;
+  string id = 2;
+  string rideId = 3;
 }
 
 service TaxiRPCService {
@@ -32,7 +38,7 @@ service TaxiRPCService {
   rpc removeTaxi(TaxiInfoMsg) returns (google.protobuf.Empty);
 
   rpc startElection(ElectionMsg) returns (OKMsg);
-  rpc finishElection(OKMsg) returns (google.protobuf.Empty);
+  rpc finishElection(FinishElectionMsg) returns (google.protobuf.Empty);
 
   rpc askRecharge(RechargeMsg) returns (OKMsg);
   rpc sendOkRecharge(OKMsg) returns (google.protobuf.Empty);

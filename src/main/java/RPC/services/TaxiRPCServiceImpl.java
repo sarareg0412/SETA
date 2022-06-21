@@ -132,9 +132,10 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
     }
 
     @Override
-    public void finishElection(OKMsg request, StreamObserver<Empty> responseObserver) {
+    public void finishElection(FinishElectionMsg request, StreamObserver<Empty> responseObserver) {
         // Election is finished
         TaxiUtils.getInstance().setInElection(false);
+        System.out.println("> [ELEC] Ride " + request.getRideId() + " taken by Taxi " + request.getId());
         Empty empty = Empty.newBuilder().build();
         responseObserver.onNext(empty);     //Sends nothing back to the caller
         responseObserver.onCompleted();

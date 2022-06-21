@@ -12,22 +12,24 @@ import utils.Utils;
 
 import java.util.concurrent.TimeUnit;
 
-public class SendOKThread extends Thread{
+public class SendOKThread<T> extends Thread{
     TaxiInfo otherTaxiInfo;
     int service;
-    public SendOKThread(TaxiInfo otherTaxiInfo, int service) {
+    T msg;
+    public SendOKThread(TaxiInfo otherTaxiInfo, int service, T msg) {
         this.otherTaxiInfo = otherTaxiInfo;
         this.service = service;
+        this.msg = msg;
     }
 
     @Override
     public void run() {
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(otherTaxiInfo.getAddress()+":" + otherTaxiInfo.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
-        OKMsg response = OKMsg.newBuilder().setOk("OK").setId(TaxiUtils.getInstance().getTaxiInfo().getId()).build();
+
         switch (service){
             case Utils.RECHARGE:
-                stub.sendOkRecharge(response, new StreamObserver<Empty>() {
+                stub.sendOkRecharge((OKMsg) msg, new StreamObserver<Empty>() {
                             @Override
                             public void onNext(Empty value) {
 
@@ -46,7 +48,7 @@ public class SendOKThread extends Thread{
                 );
                 break;
             case Utils.ELECTION:
-                stub.finishElection(response, new StreamObserver<Empty>() {
+                stub.finishElection((FinishElectionMsg) msg, new StreamObserver<Empty>() {
                             @Override
                             public void onNext(Empty value) {
                             }
