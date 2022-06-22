@@ -64,7 +64,6 @@ public class Seta {
                 String time = new Timestamp(System.currentTimeMillis()).toString();
                 if (topic.equals(Utils.TAKEN_RIDE)){
                     RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                    System.out.println("> RIDE COMPLETED");
                     setaUtils.removePendingRideFromMap(rideMsg);
                 }else {
                     String topic2 = topic.substring(0,topic.length() - 1);

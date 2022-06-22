@@ -159,10 +159,11 @@ public class Taxi {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                 if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
-                    while (taxiUtils.isInElection()) {
-                        taxiUtils.getInElectionLock().wait();
-                    }
                     if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
+//                        while (taxiUtils.isInElection()) {
+//                            taxiUtils.getInElectionLock().wait();
+//                        }
+
                         MainElectionThread electionThread = new MainElectionThread(rideMsg);
                         electionThread.start();
                         electionThread.join();

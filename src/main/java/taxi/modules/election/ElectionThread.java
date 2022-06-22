@@ -37,6 +37,8 @@ public class ElectionThread extends Thread{
         if (response.getOk().equals("OK")) {
             electionCounter.addResponse();
         }
+
+
         try {
             channel.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {

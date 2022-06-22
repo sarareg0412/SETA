@@ -51,19 +51,31 @@ public class MainElectionThread extends Thread{
         //Election counter set to current # of taxis in the network
         electionCounter = new Counter(others.size());
 
+        ArrayList<Thread> threads = new ArrayList<>();
+        System.out.println("> START Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
         for (Taxi otherTaxi : others) {
             // A new thread is created for the taxi to broadcasts the others and
             // itself to see to pick the master to take the ride
             ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage, electionCounter);
-            electionThread.start();
+            threads.add(electionThread);
         }
-
-        /* Waits for all OKs from threads */
-        try {
-            waitAllOk();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for (Thread t : threads){
+            t.start();
         }
+        /* Waits for all responses from threads */
+        for (Thread t : threads){
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("> END Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
+//        try {
+//            waitAllOk();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         System.out.println("> [ELEC] Election finished");
 
@@ -76,20 +88,20 @@ public class MainElectionThread extends Thread{
             taxiUtils.setAvailable(false);
             // Current taxi has to free the others
             System.out.println("> [ELEC] Taxi " + taxiUtils.getTaxiInfo().getId() + " is taking the ride " + rideMsg.getId());
-            others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
-            if (others.size() > 0) {
-                System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
-                FinishElectionMsg msg = FinishElectionMsg.newBuilder()
-                        .setOk("OK")
-                        .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
-                        .setRideId(rideMsg.getId())
-                        .build();
-                for (Taxi other : others) {
-                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION, msg);
-                        thread.start();
-                }
-                //Join ?
-            }
+//            others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
+//            if (others.size() > 0) {
+//                System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
+//                FinishElectionMsg msg = FinishElectionMsg.newBuilder()
+//                        .setOk("OK")
+//                        .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
+//                        .setRideId(rideMsg.getId())
+//                        .build();
+//                for (Taxi other : others) {
+//                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION, msg);
+//                        thread.start();
+//                }
+//                //Join ?
+//            }
             try {
                 publishTakenRide(rideMsg);
             } catch (MqttException e) {
@@ -97,14 +109,14 @@ public class MainElectionThread extends Thread{
             }
         }
     }
-
-    public void waitAllOk() throws InterruptedException {
-        synchronized (electionCounter.getLock()) {
-            while (electionCounter.getResponses() < electionCounter.getMaxElements()) {
-                electionCounter.getLock().wait();
-            }
-        }
-    }
+//
+//    public void waitAllOk() throws InterruptedException {
+//        synchronized (electionCounter.getLock()) {
+//            while (electionCounter.getResponses() < electionCounter.getMaxElements()) {
+//                electionCounter.getLock().wait();
+//            }
+//        }
+//    }
 
     /* Sends back an mqtt message to SETA that the ride was taken */
     public void publishTakenRide(RideMsg ride) throws MqttException {

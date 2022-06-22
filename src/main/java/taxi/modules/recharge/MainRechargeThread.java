@@ -31,8 +31,6 @@ public class MainRechargeThread extends Thread{
                     e.printStackTrace();
                 }
             }
-
-            System.out.println("> [RECH] Taxi wants to charge.");
             //Taxi wants to charge
 
             taxiUtils.setRechargeTimestamp(System.currentTimeMillis());

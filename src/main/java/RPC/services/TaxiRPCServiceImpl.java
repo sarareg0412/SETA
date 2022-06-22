@@ -46,16 +46,17 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
     @Override
     public void startElection(ElectionMsg request, StreamObserver<OKMsg> responseObserver) {
-        System.out.println("> [ELEC] Got an election request from "+ request.getId() + " for ride: " + request.getRide().getId());
+        StringBuilder s = new StringBuilder().append("> [ELEC] Got an election request from "+ request.getId() + " for ride: " + request.getRide().getId());
+        System.out.println(s);
         // Current taxi is the same who sent the request
         if (request.getId().equals(TaxiUtils.getInstance().getTaxiInfo().getId())){
-            System.out.println("> [ELEC] RESPONSE: OK");
+            //System.out.println(s.append("> RESPONSE: OK"));
             responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
             responseObserver.onCompleted();
         }else {
             // Current taxi is not in the same district of the request, sends back OK
             if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))) {
-                System.out.println("> [ELEC] RESPONSE: OK");
+                //System.out.println(s.append("> RESPONSE: OK"));
                 responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
                 responseObserver.onCompleted();
             } else {
@@ -64,23 +65,33 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                     Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
                     double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                     if (distance == request.getDistance()) {
-                        if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) < 0) {
+                        if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) >= 0) {
                             //Requesting taxi has higher id or is the same one who sent the request, returns ok
-                            System.out.println("> [ELEC] RESPONSE: OK");
+                            //System.out.println(s.append("> RESPONSE: OK"));
                             responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                            responseObserver.onCompleted();
+                        }else {
+                            //Requesting taxi has lower id, returns KO
+                            //System.out.println(s.append("> RESPONSE: KO"));
+                            responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
                             responseObserver.onCompleted();
                         }
                     } else {
                         if (distance < request.getDistance()) {
                             //Requesting taxi has lower distance, returns ok
-                            System.out.println("> [ELEC] RESPONSE: OK");
+                            //System.out.println(s.append("> RESPONSE: OK"));
                             responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
+                            responseObserver.onCompleted();
+                        }else {
+                            //Requesting taxi has Higher distance, returns KO
+                            //System.out.println(s.append("> RESPONSE: KO"));
+                            responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
                             responseObserver.onCompleted();
                         }
                     }
                 } else {
                     //Current taxi is not available, returns ok
-                    System.out.println("> [ELEC] RESPONSE: OK");
+                    //System.out.println(s.append("> RESPONSE: OK"));
                     responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
                     responseObserver.onCompleted();
                 }

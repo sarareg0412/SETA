@@ -236,7 +236,7 @@ public class TaxiUtils {
 
     @Override
     public String toString() {
-        return "> Taxi" + getTaxiInfo().getId() + " status: \n"
+        return " Taxi " + getTaxiInfo().getId() + " status: "
                 + "D" + Utils.getDistrictFromPosition(getPosition()) +"; "
                 + getPosition() +"; "
                 + getBatteryLevel() +"%;";
