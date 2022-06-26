@@ -46,8 +46,8 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
     @Override
     public void startElection(ElectionMsg request, StreamObserver<OKMsg> responseObserver) {
-        StringBuilder s = new StringBuilder().append("> [ELEC] Got an election request from "+ request.getId() + " for ride: " + request.getRide().getId());
-        System.out.println(s);
+        //StringBuilder s = new StringBuilder().append("> [ELEC] Got an election request from "+ request.getId() + " for ride: " + request.getRide().getId());
+        //System.out.println(s);
         // Current taxi is the same who sent the request
         if (request.getId().equals(TaxiUtils.getInstance().getTaxiInfo().getId())){
             //System.out.println(s.append("> RESPONSE: OK"));
@@ -61,7 +61,8 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
                 responseObserver.onCompleted();
             } else {
                 //Current taxi is available and not recharging
-                if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().isCharging()) {
+                if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().wantsToCharge()) {
+
                     Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
                     double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                     if (distance == request.getDistance()) {

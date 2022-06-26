@@ -52,7 +52,7 @@ public class MainElectionThread extends Thread{
         electionCounter = new Counter(others.size());
 
         ArrayList<Thread> threads = new ArrayList<>();
-        System.out.println("> START Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
+        //System.out.println("> START Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
         for (Taxi otherTaxi : others) {
             // A new thread is created for the taxi to broadcasts the others and
             // itself to see to pick the master to take the ride
@@ -70,7 +70,7 @@ public class MainElectionThread extends Thread{
                 e.printStackTrace();
             }
         }
-        System.out.println("> END Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
+        //System.out.println("> END Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
 //        try {
 //            waitAllOk();
 //        } catch (InterruptedException e) {
@@ -87,7 +87,7 @@ public class MainElectionThread extends Thread{
             // The current taxi was elected by the others to take the ride
             taxiUtils.setAvailable(false);
             // Current taxi has to free the others
-            System.out.println("> [ELEC] Taxi " + taxiUtils.getTaxiInfo().getId() + " is taking the ride " + rideMsg.getId());
+            //System.out.println("> [ELEC] Taxi " + taxiUtils.getTaxiInfo().getId() + " is taking the ride " + rideMsg.getId());
 //            others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
 //            if (others.size() > 0) {
 //                System.out.println("> [ELEC] Notifies the others that the ride has been taken.");

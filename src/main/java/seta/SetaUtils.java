@@ -55,7 +55,7 @@ public class SetaUtils {
         if (containsRide(distr, ride.getId())) {
             List<Ride> rideList = getPendingRidesFromDistrict(distr);
             pendingRides.put(distr, removeRideFromList(rideList,rideMsg.getId()));
-            System.out.println("> RIDE COMPLETED. Pending ride " + ride.getId() + " removed from list ");
+            System.out.println("> RIDE ASSIGNED. Pending ride " + ride.getId() + " removed from list ");
         }
     }
 
