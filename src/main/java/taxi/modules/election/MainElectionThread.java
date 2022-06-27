@@ -86,22 +86,6 @@ public class MainElectionThread extends Thread{
         if (taxiUtils.isMaster()) {
             // The current taxi was elected by the others to take the ride
             taxiUtils.setAvailable(false);
-            // Current taxi has to free the others
-            //System.out.println("> [ELEC] Taxi " + taxiUtils.getTaxiInfo().getId() + " is taking the ride " + rideMsg.getId());
-//            others.removeIf(taxi -> taxi.getTaxiInfo().getId().equals(taxiUtils.getTaxiInfo().getId()));
-//            if (others.size() > 0) {
-//                System.out.println("> [ELEC] Notifies the others that the ride has been taken.");
-//                FinishElectionMsg msg = FinishElectionMsg.newBuilder()
-//                        .setOk("OK")
-//                        .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
-//                        .setRideId(rideMsg.getId())
-//                        .build();
-//                for (Taxi other : others) {
-//                        SendOKThread thread = new SendOKThread(other.getTaxiInfo(), Utils.ELECTION, msg);
-//                        thread.start();
-//                }
-//                //Join ?
-//            }
             try {
                 publishTakenRide(rideMsg);
             } catch (MqttException e) {
@@ -109,14 +93,6 @@ public class MainElectionThread extends Thread{
             }
         }
     }
-//
-//    public void waitAllOk() throws InterruptedException {
-//        synchronized (electionCounter.getLock()) {
-//            while (electionCounter.getResponses() < electionCounter.getMaxElements()) {
-//                electionCounter.getLock().wait();
-//            }
-//        }
-//    }
 
     /* Sends back an mqtt message to SETA that the ride was taken */
     public void publishTakenRide(RideMsg ride) throws MqttException {

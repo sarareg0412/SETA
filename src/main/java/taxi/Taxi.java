@@ -12,7 +12,6 @@ import com.sun.jersey.api.client.WebResource;
 import exceptions.taxi.TaxiAlreadyPresentException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.*;
 import ride.Ride;
 import simulator.MeasurementsBuffer;
@@ -20,12 +19,10 @@ import simulator.PM10Simulator;
 import statistics.Stats;
 import statistics.modules.*;
 import taxi.modules.*;
-import taxi.modules.election.ElectionThread;
 import taxi.modules.election.MainElectionThread;
 import taxi.modules.recharge.CheckBatteryThread;
 import taxi.modules.recharge.MainRechargeThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
-import unimi.dps.taxi.TaxiRPCServiceGrpc.TaxiRPCServiceStub;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Position;
 import utils.Utils;
@@ -36,8 +33,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 @XmlRootElement
@@ -160,9 +155,6 @@ public class Taxi {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                 if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
                     if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
-//                        while (taxiUtils.isInElection()) {
-//                            taxiUtils.getInElectionLock().wait();
-//                        }
 
                         MainElectionThread electionThread = new MainElectionThread(rideMsg);
                         electionThread.start();
@@ -188,7 +180,6 @@ public class Taxi {
         taxiUtils.setBatteryLevel(Utils.MAX_BATTERY);       // Taxi initialized with max battery
         taxiUtils.setAvailable(true);                       // Taxi is set available to take rides
         taxiUtils.setCharging(false);                       // Taxi is not recharging
-        taxiUtils.setInElection(false);                     // Taxi is not in election
     }
 
     public void initThreads(){
@@ -318,16 +309,8 @@ public class Taxi {
         MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
         msg.setQos(taxiUtils.getQos());
         taxiUtils.getMQTTClient().publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(taxiUtils.getPosition()), msg);
-        //System.out.println("> TAXI AVAILABLE Correctly notified SETA");
     }
 
-    /* Notifies SETA that taxi is not available anymore in that district */
-    public static void publishUnavailable(Position p, MqttClient client, int qos) throws MqttException {
-        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
-        msg.setQos(qos);
-        client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(p), msg);
-        //System.out.println("> TAXI UNAVAILABLE Correctly notified SETA");
-    }
 
     public void takeRide(Ride ride) throws MqttException {
         try {
@@ -343,7 +326,7 @@ public class Taxi {
         //Taxi subscribes to new distric topic if necessary
         if (Utils.getDistrictFromPosition(oldPosition) != Utils.getDistrictFromPosition(ride.getFinish())) {
             unsubscribe(Utils.getDistrictTopicFromPosition(oldPosition));
-            publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
+            Utils.publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
             subscribeToTopic(Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
             publishAvailable();
         }
@@ -351,7 +334,6 @@ public class Taxi {
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
         taxiUtils.setAvailable(true);
-        taxiUtils.setInElection(false);
         taxiUtils.setMaster(false);
         System.out.println("> [ELEC] RIDE COMPLETED " + ride.getId());
         addStatsToQueue(ride.getKmToTravel(oldPosition));

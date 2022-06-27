@@ -146,4 +146,10 @@ public class Utils {
         return getDistanceBetweenPositions(p, getNearestStationPosition(p));
     }
 
+    /* Notifies SETA that taxi is not available anymore in that district */
+    public static void publishUnavailable(Position p, MqttClient client, int qos) throws MqttException {
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(p), msg);
+    }
 }

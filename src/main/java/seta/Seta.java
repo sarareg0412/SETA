@@ -74,7 +74,7 @@ public class Seta {
                             break;
                         case Utils.TAXI_UNAVAILABLE:
                             int k2 = Integer.parseInt(String.valueOf(topic.charAt(topic.length() -1 )));
-                            System.out.println("> TAXI CHANGED DISTRICT: " + k2);
+                            System.out.println("> TAXI UNAVAILABLE FROM DISTRICT: " + k2);
                             setaUtils.updateNTaxiMap(k2, Math.min(setaUtils.getNTaxiForDistrict(k2) - 1, 0));
                             break;
                     }
@@ -111,7 +111,7 @@ public class Seta {
                     //Adds a ride for each taxi, or all pending rides for that district
                     publishList.addAll(setaUtils.getPendingRidesFromDistrict(i)
                                                 .stream()
-                                                .limit(Math.max(ntaxi,nrides))
+                                                .limit(Math.min(ntaxi,nrides))
                                                 .collect(Collectors.toList()));
                 }
             }

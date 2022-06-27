@@ -68,6 +68,7 @@ public class MainRechargeThread extends Thread{
             taxiUtils.setCharging(false);
             //taxiUtils.setAvailable(true);
             taxiUtils.setWantsToCharge(false);
+            taxiUtils.setAvailable(true);
             System.out.println("> [RECH] Taxi fully charged.");
             System.out.println(taxiUtils);
             sendAllPendingOK();

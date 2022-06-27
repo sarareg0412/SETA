@@ -48,6 +48,20 @@ public class StdInThread extends Thread {
             switch (i) {
                 case 1:
                     try {
+                        // Waits until taxi is available
+                        while (!TaxiUtils.getInstance().isAvailable()) {
+                            try {
+                                synchronized (TaxiUtils.getInstance().getAvailableLock()) {
+                                    TaxiUtils.getInstance().getAvailableLock().wait();
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        System.out.println("> [QUIT] Taxi can now leave the network.");
+                        //Notifies Seta
+                        Utils.publishUnavailable(TaxiUtils.getInstance().getPosition(), TaxiUtils.getInstance().getMQTTClient(), TaxiUtils.getInstance().getQos());
                         stopTaxi();
                     } catch (Exception e) {
                         System.out.println("> An error occurred while trying to leave the network. "
@@ -57,9 +71,9 @@ public class StdInThread extends Thread {
                     break;
                 case 2:
                     if (TaxiUtils.getInstance().wantsToCharge() || TaxiUtils.getInstance().isCharging()){
-                        System.out.println("> Recharging process is already in place.");
+                        System.out.println("> [REC] Recharging process is already in place.");
                     }else
-                        TaxiUtils.getInstance().setWantsToCharge(true);
+                        TaxiUtils.getInstance().setAskRecharge(true);
 
                     break;
             }
@@ -97,13 +111,12 @@ public class StdInThread extends Thread {
             @Override
             public void onNext(Empty value) {
                 // The current taxi correctly notified the others
-                System.out.println("> Other taxis correctly reached.");
+                //System.out.println("> Other taxis correctly reached.");
             }
 
             @Override
             public void onError(Throwable t) {
                 System.out.println("> An error occurred while trying to leave the network. Couldn't reach the other taxis.");
-
             }
 
             @Override
@@ -125,7 +138,7 @@ public class StdInThread extends Thread {
 
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
             //Taxi correctly deleted
-            System.out.println("> Taxi correctly deleted from the network.");
+            System.out.println("> [QUIT] Taxi correctly deleted from the network.");
         } else if (ClientResponse.Status.CONFLICT.getStatusCode() == statusInfo) {
             //Taxi not present
             throw new TaxiNotFoundException();
