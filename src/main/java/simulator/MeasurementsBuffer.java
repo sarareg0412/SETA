@@ -1,8 +1,10 @@
 package simulator;
 
 import taxi.TaxiUtils;
+import utils.Queue;
 import utils.Utils;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -10,6 +12,9 @@ import java.util.List;
 public class MeasurementsBuffer implements Buffer{
 
     private ArrayList<Measurement> buffer;
+    private List<Measurement> measurementAvgQueue = new ArrayList<>();                // Queue of the measurement's averages
+    int id = 0;
+
     public final Object bufferLock;
 
     public MeasurementsBuffer() {
@@ -31,6 +36,12 @@ public class MeasurementsBuffer implements Buffer{
 
     @Override
     public List<Measurement> readAllAndClean() {
+        ArrayList<Measurement> queueCopy = new ArrayList<>(measurementAvgQueue);
+        measurementAvgQueue.clear();
+        return queueCopy;
+    }
+
+    public List<Measurement> slide(){
         ArrayList<Measurement> l = new ArrayList<>(buffer);
         synchronized (bufferLock){
             for (int i = 0; i < Utils.SLIDING_WINDOWS_BUFFER_LENGTH * Utils.OVERLAP; i++) {
@@ -43,8 +54,8 @@ public class MeasurementsBuffer implements Buffer{
     public void computeAvg(){
         // The list of measurements is retrieved in a controlled way, then
         // the average of the measurements is computed and added to the Queue
-        List<Measurement> list = readAllAndClean();
+        List<Measurement> list = slide();
         double avg = list.stream().mapToDouble(Measurement::getValue).average().orElse(0.0);
-        TaxiUtils.getInstance().addAvgToQueue(avg);
+        measurementAvgQueue.add(new Measurement(String.valueOf(id++), "PM10", avg, System.currentTimeMillis()));
     }
 }

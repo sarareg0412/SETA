@@ -123,7 +123,6 @@ public class Seta {
                 Ride r1 = createNewRide(String.valueOf(++rideCounter));
                 setaUtils.addPendingRideToMap(r1);
                 publishList.add(r1);
-
             case 1:
                 //Only one ride was added, publish another random one
                 Ride r2 = createNewRide(String.valueOf(++rideCounter));

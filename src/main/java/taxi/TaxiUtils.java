@@ -2,6 +2,7 @@ package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import simulator.MeasurementsBuffer;
 import utils.Counter;
 import utils.Position;
 import utils.Queue;
@@ -16,7 +17,6 @@ public class TaxiUtils {
     private List<Taxi>                  taxisList;                          // List of other taxis
     private int                         batteryLevel;                       // Taxi's battery level
     private Position                    position;                           // Taxi's position
-    private Queue<Double>               measurementAvgQueue;                // Queue of the measurement's averages
 
     private MqttClient MQTTClient;
     private int qos;
@@ -33,7 +33,6 @@ public class TaxiUtils {
     private long                        rechargeTimestamp;
     private Queue<TaxiInfo>             rechargeRequests;                   // Queue of recharging requests
 
-    private boolean                     inElection;                         // Taxi currently in election
     private Object                      inElectionLock;                      // Available's lock
 
     private boolean                     isMaster;                           // Taxi is selected to take the ride
@@ -45,7 +44,6 @@ public class TaxiUtils {
     public TaxiUtils() {
         this.taxisList = new ArrayList<>();
         this.position = new Position();
-        this.measurementAvgQueue = new Queue<>();
         this.rechargeRequests = new Queue<>();
         this.wantsToChargeLock = new Object();
         this.availableLock = new Object();
@@ -156,35 +154,8 @@ public class TaxiUtils {
         isCharging = charging;
     }
 
-    public void addAvgToQueue(double avg){
-        measurementAvgQueue.put(avg);
-    }
-
-    public ArrayList<Double> getMeasurementAvgQueue() {
-        return measurementAvgQueue.getAllAndEmptyQueue();
-    }
-
     public boolean isInTheSameDistrict(Position position){
         return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
-    }
-
-    public boolean isInElection() {
-        synchronized (inElectionLock) {
-            return inElection;
-        }
-    }
-
-    public void setInElection(boolean inElection) {
-        synchronized (inElectionLock) {
-            this.inElection = inElection;
-            if (!inElection){
-                inElectionLock.notifyAll();
-            }
-        }
-    }
-
-    public Object getInElectionLock() {
-        return inElectionLock;
     }
 
     public boolean isMaster() {

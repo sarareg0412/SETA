@@ -29,7 +29,6 @@ public class MainElectionThread extends Thread{
     @Override
     public void run() {
         System.out.println("> [ELEC] NEW RIDE REQUEST " + TextFormat.shortDebugString(rideMsg));
-        taxiUtils.setInElection(true);
         try {
             startElection(rideMsg);
         } catch (MqttException e) {

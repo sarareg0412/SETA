@@ -27,43 +27,24 @@ public class SendOKThread<T> extends Thread{
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(otherTaxiInfo.getAddress()+":" + otherTaxiInfo.getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
 
-        switch (service){
-            case Utils.RECHARGE:
-                stub.sendOkRecharge((OKMsg) msg, new StreamObserver<Empty>() {
-                            @Override
-                            public void onNext(Empty value) {
+        if (service == Utils.RECHARGE) {
+            stub.sendOkRecharge((OKMsg) msg, new StreamObserver<Empty>() {
+                        @Override
+                        public void onNext(Empty value) {
 
-                            }
-
-                            @Override
-                            public void onError(Throwable t) {
-                                System.out.println("> [RECH] ERR: "+ t.getMessage());
-                            }
-
-                            @Override
-                            public void onCompleted() {
-                                channel.shutdown();
-                            }
                         }
-                );
-                break;
-            case Utils.ELECTION:
-                stub.finishElection((FinishElectionMsg) msg, new StreamObserver<Empty>() {
-                            @Override
-                            public void onNext(Empty value) {
-                            }
 
-                            @Override
-                            public void onError(Throwable t) {
-                                System.out.println("> [RECH] ERR: "+ t.getMessage());
-                            }
-
-                            @Override
-                            public void onCompleted() {
-                                channel.shutdown();
-                            }
+                        @Override
+                        public void onError(Throwable t) {
+                            System.out.println("> [RECH] ERR: " + t.getMessage());
                         }
-                );
+
+                        @Override
+                        public void onCompleted() {
+                            channel.shutdown();
+                        }
+                    }
+            );
         }
         try {
             channel.awaitTermination(1, TimeUnit.SECONDS);

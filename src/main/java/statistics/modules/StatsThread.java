@@ -5,19 +5,26 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import simulator.Measurement;
+import simulator.MeasurementsBuffer;
 import statistics.Stats;
 import taxi.TaxiUtils;
 import utils.Queue;
 import utils.Utils;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StatsThread extends Thread{
     private Queue<Stats> statsQueue;
     private Client client = Client.create();
+    MeasurementsBuffer measurementsBuffer;
 
-    public StatsThread() {
+    public StatsThread(MeasurementsBuffer measurementsBuffer)
+    {
+        this.measurementsBuffer = measurementsBuffer;
         statsQueue = new Queue<Stats>();
     }
 
@@ -44,12 +51,12 @@ public class StatsThread extends Thread{
     /* Computing the statistics to send to the server*/
     private Stats computeStats(List<Stats> statsList){
         Stats stats = new Stats();
-
+        List<Measurement> measurementsList = measurementsBuffer.readAllAndClean();
         stats.setKmDriven(statsList.stream().mapToDouble(Stats::getKmDriven).sum());
         stats.setCompletedRides(statsList.size());
         stats.setTaxiId(TaxiUtils.getInstance().getTaxiInfo().getId());
         stats.setBattery(TaxiUtils.getInstance().getBatteryLevel());
-        stats.setAirPollutionLev(TaxiUtils.getInstance().getMeasurementAvgQueue());
+        stats.setAirPollutionLev(new ArrayList<>(measurementsList.stream().map(Measurement::getValue).collect(Collectors.toList())));
         stats.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
 
         return stats;

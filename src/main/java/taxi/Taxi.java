@@ -124,7 +124,6 @@ public class Taxi {
 
         while (true) {
             try {
-                //addStatsToQueue();
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -186,8 +185,9 @@ public class Taxi {
         grpcServerThread = new GRPCServerThread();
         grpcServerThread.start();                           // RPC thread started
         stdInThread = new StdInThread();
-        statsThread = new StatsThread();
-        pm10Simulator = new PM10Simulator(new MeasurementsBuffer());
+        MeasurementsBuffer buffer = new MeasurementsBuffer();
+        statsThread = new StatsThread(buffer);
+        pm10Simulator = new PM10Simulator(buffer);
         mainRechargeThread = new MainRechargeThread();
         checkBatteryThread = new CheckBatteryThread();
     }
@@ -340,7 +340,7 @@ public class Taxi {
     }
 
 
-    public void addStatsToQueue(double km){
+    private void addStatsToQueue(double km){
         Stats stats = new Stats();
         stats.setTaxiId(taxiInfo.getId());
         stats.setKmDriven(km);
