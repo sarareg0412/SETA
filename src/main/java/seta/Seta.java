@@ -69,13 +69,13 @@ public class Seta {
                     switch (topic2){
                         case Utils.TAXI_AVAILABLE:     //Update counter for the taxi in each district
                             int k1 = Integer.parseInt(String.valueOf(topic.charAt(topic.length() -1 )));
-                            System.out.println("> TAXI AVAILABLE AT DISTRICT "+k1);
+                            System.out.println("> TAXI AVAILABLE AT DISTRICT "+ k1 );
                             setaUtils.updateNTaxiMap(k1, setaUtils.getNTaxiForDistrict(k1) +1 );
                             break;
                         case Utils.TAXI_UNAVAILABLE:
                             int k2 = Integer.parseInt(String.valueOf(topic.charAt(topic.length() -1 )));
                             System.out.println("> TAXI UNAVAILABLE FROM DISTRICT: " + k2);
-                            setaUtils.updateNTaxiMap(k2, Math.min(setaUtils.getNTaxiForDistrict(k2) - 1, 0));
+                            setaUtils.updateNTaxiMap(k2, setaUtils.getNTaxiForDistrict(k2) - 1);
                             break;
                     }
                 }

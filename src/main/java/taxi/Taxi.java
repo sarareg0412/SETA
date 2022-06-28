@@ -284,7 +284,7 @@ public class Taxi {
         try {
             return webResource.type("application/json").post(ClientResponse.class, input);
         } catch (ClientHandlerException e) {
-            System.out.println("> Service unavailable");
+            System.out.println("> Service currently unavailable. Please try again.");
             return null;
         }
     }

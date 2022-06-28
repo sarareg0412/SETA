@@ -26,9 +26,9 @@ public class AdministratorClient {
             int n = 0;
             while (check) {
                 System.out.println("\n\n> Select the service you want to ask for:");
-                System.out.println("> [1] Print the list of the taxis currently in the network");
-                System.out.println("> [2] Print the average of n statistics of a Taxi currently in the network");
-                System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps");
+                System.out.println("> [1] Print the list of the taxis currently in the network.");
+                System.out.println("> [2] Print the average of n statistics of a Taxi.");
+                System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps.");
                 try {
                     String s = inFromUser.readLine();
                     if (!s.equals("")){

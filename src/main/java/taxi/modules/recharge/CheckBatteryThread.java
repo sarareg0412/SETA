@@ -8,8 +8,9 @@ public class CheckBatteryThread extends Thread{
     @Override
     public void run() {
         while (!TaxiUtils.getInstance().quit()){
-            if (TaxiUtils.getInstance().askedToRecharge() ||
-                 TaxiUtils.getInstance().getBatteryLevel() < Utils.MIN_BATTERY_LEVEL){
+            // Taxi asked to recharge or its battery is low, but the recharge process hasn't started yet
+            if ((TaxiUtils.getInstance().askedToRecharge() || TaxiUtils.getInstance().getBatteryLevel() < Utils.MIN_BATTERY_LEVEL)
+                && !TaxiUtils.getInstance().wantsToCharge() ){
                 System.out.println("> [RECH] Taxi needs to charge! ");
                 // Waits until taxi is available
                 while (!TaxiUtils.getInstance().isAvailable()) {

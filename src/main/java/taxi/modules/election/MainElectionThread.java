@@ -51,7 +51,7 @@ public class MainElectionThread extends Thread{
         electionCounter = new Counter(others.size());
 
         ArrayList<Thread> threads = new ArrayList<>();
-        //System.out.println("> START Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
+
         for (Taxi otherTaxi : others) {
             // A new thread is created for the taxi to broadcasts the others and
             // itself to see to pick the master to take the ride
@@ -69,27 +69,22 @@ public class MainElectionThread extends Thread{
                 e.printStackTrace();
             }
         }
-        //System.out.println("> END Counter: max " + electionCounter.getMaxElements() + " resp:" + electionCounter.getResponses());
-//        try {
-//            waitAllOk();
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-
-        System.out.println("> [ELEC] Election finished");
 
         if(electionCounter.getResponses() >= electionCounter.getMaxElements() )
             taxiUtils.setMaster(true);
 
-
         if (taxiUtils.isMaster()) {
             // The current taxi was elected by the others to take the ride
+            System.out.println("> [ELEC] Taxi is taking the ride ...");
             taxiUtils.setAvailable(false);
             try {
                 publishTakenRide(rideMsg);
             } catch (MqttException e) {
                 System.out.println("> An error occurred while taking the ride. ");
             }
+        }else {
+            System.out.println("> [ELEC] Ride already taken.");
+
         }
     }
 

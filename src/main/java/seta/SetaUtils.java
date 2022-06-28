@@ -13,14 +13,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SetaUtils {
-    private Map<Integer, List<Ride>> pendingRides;               // Map of pending rides by district
+    private Map<Integer, List<Ride>>            pendingRides;               // Map of pending rides by district
 
-    private Map<Integer, Integer> nTaxiMap;                      // Maps that keeps the number of taxis available for each district
-    private int qos;
-    private MqttClient client;
-    private MqttConnectOptions connOpts;
+    private Map<Integer, Integer>               nTaxiMap;                   // Map that keeps the number of taxis available for each district
+    private final Object                              mapLock;                    // Map's lock
+    private int                                 qos;
+    private MqttClient                          client;
+    private MqttConnectOptions                  connOpts;
 
-    private static SetaUtils instance;
+    private static SetaUtils                    instance;
 
     public SetaUtils() {
         this.pendingRides = new HashMap<>();
@@ -31,6 +32,7 @@ public class SetaUtils {
             put(3,0);
             put(4,0);
         }};
+        this.mapLock = new Object();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -40,12 +42,16 @@ public class SetaUtils {
         return instance;
     }
 
-    public synchronized void updateNTaxiMap(int k, int v){
-        nTaxiMap.put(k,v);
+    public void updateNTaxiMap(int k, int v){
+        synchronized (mapLock) {
+            nTaxiMap.put(k, v);
+        }
     }
 
-    public synchronized Integer getNTaxiForDistrict(int k){
-        return nTaxiMap.get(k);
+    public Integer getNTaxiForDistrict(int k){
+        synchronized (mapLock) {
+            return nTaxiMap.get(k);
+        }
     }
 
     /* Remove pending ride from list */
@@ -96,15 +102,6 @@ public class SetaUtils {
             }
         }
         return false;
-    }
-
-    public void resetIsSentStatus(){
-        for (int i=1; i<=4; i++){
-            List<Ride> list = getPendingRidesFromDistrict(i);
-            if (list != null) {
-                list.forEach(ride -> ride.setSent(false));
-            }
-        }
     }
 
     public synchronized List<Ride> getPendingRidesFromDistrict(int district) {

@@ -4,6 +4,7 @@ import taxi.Taxi;
 import taxi.TaxiInfo;
 import taxi.TaxiUtils;
 import taxi.modules.SendOKThread;
+import unimi.dps.ride.Ride;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
 import utils.Utils;
@@ -41,6 +42,10 @@ public class MainRechargeThread extends Thread{
                             .setId(taxiUtils.getTaxiInfo().getId())
                             .setPort(taxiUtils.getTaxiInfo().getPort())
                             .setAddress(taxiUtils.getTaxiInfo().getAddress())
+                            .setPosition(Ride.RideMsg.PositionMsg.newBuilder()
+                                    .setX(taxiUtils.getPosition().getY())
+                                    .setY(taxiUtils.getPosition().getY())
+                                    .build())
                             .build())
                     .build();
 
@@ -66,7 +71,6 @@ public class MainRechargeThread extends Thread{
             taxiUtils.setPosition(Utils.getNearestStationPosition(taxiUtils.getPosition()));
             taxiUtils.setBatteryLevel(100);
             taxiUtils.setCharging(false);
-            //taxiUtils.setAvailable(true);
             taxiUtils.setWantsToCharge(false);
             taxiUtils.setAvailable(true);
             System.out.println("> [RECH] Taxi fully charged.");
