@@ -25,7 +25,7 @@ public class AdministratorClient {
             boolean check = true;
             int n = 0;
             while (check) {
-                System.out.println("\n\n> Select the service you want to ask for:");
+                System.out.println("> Select the service you want to ask for:");
                 System.out.println("> [1] Print the list of the taxis currently in the network.");
                 System.out.println("> [2] Print the average of n statistics of a Taxi.");
                 System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps.");
@@ -33,12 +33,14 @@ public class AdministratorClient {
                     String s = inFromUser.readLine();
                     if (!s.equals("")){
                         n = Integer.parseInt(s);
-                        check = false;
+                        if (n<1 || n>4)
+                            throw new IOException();
+                        else
+                            check = false;
                     }else
                         throw new IOException();
                 } catch (IOException e) {
-                    System.out.println("> Please insert a valid number.\n");
-                    e.printStackTrace();
+                    System.out.println("> Please insert a valid number.");
                 }
             }
 
@@ -82,12 +84,12 @@ public class AdministratorClient {
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {
             taxiResponse = clientResponse.getEntity(TaxiResponse.class);
             if (taxiResponse.getTaxiInfoList() != null){
-                System.out.println("> Taxis in the network:\n");
+                System.out.println("> Taxis in the network:");
                 for (TaxiInfo info : taxiResponse.getTaxiInfoList()){
-                    System.out.println(info + "\n");
+                    System.out.println(info + "");
                 }
             }else
-                System.out.println("> There are no taxis in the network yet.\n");
+                System.out.println("> There are no taxis in the network yet.");
 
         }else {
             throw new Exception("Status code: "+ statusInfo);
@@ -99,7 +101,7 @@ public class AdministratorClient {
         String id="";
 
         while (check) {
-            System.out.println("\n> Insert the ID of the taxi:");
+            System.out.println("> Insert the ID of the taxi:");
             try {
                 id = inFromUser.readLine();
                 if (!id.equals(""))
@@ -108,16 +110,16 @@ public class AdministratorClient {
                     throw new IOException();
 
             }catch (IOException e){
-                    System.out.println("> Please insert a valid ID. \n");
+                    System.out.println("> Please insert a valid ID. ");
             } catch (Exception e) {
-                System.out.println("> An error occurred. Please insert a value\n");
+                System.out.println("> An error occurred. Please insert a value");
             }
         }
 
         check =  true;
         int n=0;
         while (check) {
-            System.out.println("\n> How many statistics would you like to check? ");
+            System.out.println("> How many statistics would you like to check? ");
             try {
                 String s = inFromUser.readLine();
                 if (!s.equals("")){
@@ -126,9 +128,9 @@ public class AdministratorClient {
                 }else
                     throw new IOException();
             } catch (IOException e) {
-                System.out.println("> Please insert a valid number.\n");
+                System.out.println("> Please insert a valid number.");
             } catch (Exception e) {
-               System.out.println("> An Error occurred. Please insert a number. \n");
+               System.out.println("> An Error occurred. Please insert a number. ");
             }
         }
 
@@ -142,7 +144,7 @@ public class AdministratorClient {
             if (response.getStatsList() != null){
                 computeAverage(response.getStatsList());
             }else
-                System.out.println("> There are no statistics for the taxi "+ id +" yet.\n");
+                System.out.println("> There are no statistics for the taxi "+ id +" yet.");
         } else if (ClientResponse.Status.NOT_FOUND.getStatusCode() == statusInfo) {
             //The taxi specified does not exist
             throw new TaxiNotFoundException("No stats found for taxi " + id +".");
@@ -156,7 +158,7 @@ public class AdministratorClient {
         String t1="", t2 ="";
 
         while (check) {
-            System.out.println("\n> Insert the first timestamp [format: yyyy-mm-dd HH:mm]");
+            System.out.println("> Insert the first timestamp [format: yyyy-mm-dd HH:mm]");
             try {
                 t1 = inFromUser.readLine();
                 if (Utils.isTimestampValid(t1)) {
@@ -173,7 +175,7 @@ public class AdministratorClient {
 
         check = true;
         while (check) {
-            System.out.println("\n> Insert the second timestamp [format: yyyy-mm-dd HH:mm]");
+            System.out.println("> Insert the second timestamp [format: yyyy-mm-dd HH:mm]");
             try {
                 t2 = inFromUser.readLine();
                 if (Utils.isTimestampValid(t2) && Utils.moreThanEqual(t1, t2)) {
@@ -198,7 +200,7 @@ public class AdministratorClient {
             if (response.getStatsList() != null){
                 computeAverage(response.getStatsList());
             }else
-                System.out.println("> There are no statistics between "+ t1 +" and "+ t2 +" yet.\n");
+                System.out.println("> There are no statistics between "+ t1 +" and "+ t2 +" yet.");
         }else {
             throw new Exception("> An error occurred. Status code: "+ statusInfo);
         }
