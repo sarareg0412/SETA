@@ -4,26 +4,29 @@ import com.google.protobuf.TextFormat;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import ride.Ride;
+import statistics.Stats;
 import taxi.Taxi;
 import taxi.TaxiUtils;
-import taxi.modules.SendOKThread;
 import unimi.dps.ride.Ride.*;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
+import utils.Position;
+import utils.Queue;
 import utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class MainElectionThread extends Thread{
     TaxiUtils taxiUtils;
     RideMsg rideMsg;
     Counter electionCounter;
+    Queue<Stats> statsQueue;
 
-    public MainElectionThread(RideMsg rideMsg) {
+    public MainElectionThread(RideMsg rideMsg, Queue<Stats> statsQueue) {
         this.taxiUtils = TaxiUtils.getInstance();
         this.rideMsg = rideMsg;
+        this.statsQueue = statsQueue;
     }
 
     @Override
@@ -70,15 +73,13 @@ public class MainElectionThread extends Thread{
             }
         }
 
-        if(electionCounter.getResponses() >= electionCounter.getMaxElements() )
-            taxiUtils.setMaster(true);
-
-        if (taxiUtils.isMaster()) {
+        if(electionCounter.getResponses() >= electionCounter.getMaxElements()){
             // The current taxi was elected by the others to take the ride
             System.out.println("> [ELEC] Taxi is taking the ride ...");
             taxiUtils.setAvailable(false);
             try {
                 publishTakenRide(rideMsg);
+                takeRide(new Ride(rideMsg));
             } catch (MqttException e) {
                 System.out.println("> An error occurred while taking the ride. ");
             }
@@ -95,4 +96,42 @@ public class MainElectionThread extends Thread{
         taxiUtils.getMQTTClient().publish(Utils.TAKEN_RIDE, msg);
     }
 
+    public void takeRide(Ride ride) throws MqttException {
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Position oldPosition = taxiUtils.getPosition();
+        // Taxi completed the ride; changes position
+        taxiUtils.setPosition(ride.getFinish());
+
+        //Taxi subscribes to new distric topic if necessary
+        if (Utils.getDistrictFromPosition(oldPosition) != Utils.getDistrictFromPosition(ride.getFinish())) {
+            Utils.unsubscribe(taxiUtils.getMQTTClient(), Utils.getDistrictTopicFromPosition(oldPosition));
+            Utils.publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
+            Utils.subscribeToTopic(taxiUtils.getMQTTClient(), taxiUtils.getQos(), Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
+            Utils.publishAvailable(taxiUtils.getMQTTClient(), taxiUtils.getQos(), taxiUtils.getPosition());
+        }
+        // Taxi battery level decreases
+        taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
+        taxiUtils.setMaster(false);
+        System.out.println("> [ELEC] RIDE COMPLETED " + ride.getId());
+        // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
+        addStatsToQueue(ride.getKmToTravel(oldPosition));
+        if (taxiUtils.getBatteryLevel() < Utils.MIN_BATTERY_LEVEL){
+            System.out.println("> [REC] Taxi needs to charge!");
+            taxiUtils.setWantsToCharge(true);
+        }else {
+            taxiUtils.setAvailable(true);
+        }
+    }
+    private void addStatsToQueue(double km){
+        Stats stats = new Stats();
+        stats.setTaxiId(taxiUtils.getTaxiInfo().getId());
+        stats.setKmDriven(km);
+        statsQueue.put(stats);
+    }
 }

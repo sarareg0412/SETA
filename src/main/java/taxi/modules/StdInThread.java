@@ -72,9 +72,21 @@ public class StdInThread extends Thread {
                 case 2:
                     if (TaxiUtils.getInstance().wantsToCharge() || TaxiUtils.getInstance().isCharging()){
                         System.out.println("> [REC] Recharging process is already in place.");
-                    }else
-                        TaxiUtils.getInstance().setAskRecharge(true);
-
+                    }else {
+                        // Waits until taxi is available
+                        System.out.println("> [RECH] Taxi wants to charge! ");
+                        while (!TaxiUtils.getInstance().isAvailable()) {
+                            try {
+                                synchronized (TaxiUtils.getInstance().getAvailableLock()) {
+                                    TaxiUtils.getInstance().getAvailableLock().wait();
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        System.out.println("> [RECH] Taxi is now free to recharge ");
+                        TaxiUtils.getInstance().setWantsToCharge(true);
+                    }
                     break;
             }
         }

@@ -38,11 +38,6 @@ public class ElectionThread extends Thread{
             electionCounter.addResponse();
         }
         channel.shutdown();
-//        try {
-//            channel.awaitTermination(1, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//            System.out.println("> [ERR] An error occurred while waiting for the election channel to shutdown");
-//        }
     }
 
 

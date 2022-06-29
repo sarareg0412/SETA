@@ -33,7 +33,7 @@ public class MainRechargeThread extends Thread{
                 }
             }
             //Taxi wants to charge
-
+            TaxiUtils.getInstance().setAvailable(false);
             taxiUtils.setRechargeTimestamp(System.currentTimeMillis());
             // Starts Mutual Exclusion to recharge
             RechargeMsg rechargeMsg = RechargeMsg.newBuilder()
@@ -58,8 +58,9 @@ public class MainRechargeThread extends Thread{
             }
 
             System.out.println(taxiUtils);
-            System.out.println("> [RECH] Taxi is recharging ...");
+            taxiUtils.setWantsToCharge(false);
             taxiUtils.setCharging(true);
+            System.out.println("> [RECH] Taxi is recharging ...");
             taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(Utils.getDistanceFromRechargeStation(taxiUtils.getPosition())));
 
             try {
@@ -70,10 +71,9 @@ public class MainRechargeThread extends Thread{
 
             taxiUtils.setPosition(Utils.getNearestStationPosition(taxiUtils.getPosition()));
             taxiUtils.setBatteryLevel(100);
-            taxiUtils.setCharging(false);
-            taxiUtils.setWantsToCharge(false);
             taxiUtils.setAvailable(true);
             System.out.println("> [RECH] Taxi fully charged.");
+            taxiUtils.setCharging(false);
             System.out.println(taxiUtils);
             sendAllPendingOK();
         }

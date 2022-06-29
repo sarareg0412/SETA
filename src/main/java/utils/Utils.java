@@ -152,4 +152,22 @@ public class Utils {
         msg.setQos(qos);
         client.publish(Utils.TAXI_UNAVAILABLE + Utils.getDistrictFromPosition(p), msg);
     }
+
+    public static void unsubscribe(MqttClient client, String topic) throws MqttException {
+        client.unsubscribe(topic);
+        System.out.println("> Taxi unsubscribed from topic : " + topic);
+    }
+
+    public static void subscribeToTopic(MqttClient client, int qos, String topic) throws MqttException {
+        client.subscribe(topic, qos);
+        System.out.println("> Taxi subscribed to topic : " + topic);
+    }
+
+    /* Notifies SETA that it is available */
+    public static void publishAvailable(MqttClient client, int qos, Position position) throws MqttException {
+        MqttMessage msg = new MqttMessage(Empty.newBuilder().build().toByteArray());
+        msg.setQos(qos);
+        client.publish(Utils.TAXI_AVAILABLE + Utils.getDistrictFromPosition(position), msg);
+    }
+
 }
