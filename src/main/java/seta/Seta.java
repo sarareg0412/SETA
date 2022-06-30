@@ -5,6 +5,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import ride.Ride;
 import unimi.dps.ride.Ride.RideMsg;
 import utils.Position;
+import utils.RideChecker;
 import utils.Utils;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ citizens of the smart city. */
 public class Seta {
     private SetaUtils setaUtils;
     private int rideCounter = 0;
+    private RideChecker rideChecker = new RideChecker();
 
     public Seta() {
         setaUtils = SetaUtils.getInstance();
@@ -34,8 +36,6 @@ public class Seta {
                 // Two rides or more are published every 5 seconds
                 publishRides();
                 printSetaStatus();
-                //setaUtils.resetIsSentStatus();
-                // Reset is sent status
                 Thread.sleep(10000);
             }
         }catch (MqttException e) {
@@ -64,6 +64,7 @@ public class Seta {
                 if (topic.equals(Utils.TAKEN_RIDE)){
                     RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                     setaUtils.removePendingRideFromMap(rideMsg);
+                    rideChecker.addRide(Integer.parseInt(rideMsg.getId()));
                 }else {
                     String topic2 = topic.substring(0,topic.length() - 1);
                     switch (topic2){

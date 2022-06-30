@@ -141,6 +141,7 @@ public class Taxi {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
+                //To overcome the fact that a message can arrive even if the taxi moved to another district for delays
                 if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
                     if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
                         MainElectionThread electionThread = new MainElectionThread(rideMsg, statsThread.getStatsQueue());

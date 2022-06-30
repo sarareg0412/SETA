@@ -18,8 +18,10 @@ public class TaxiUtils {
     private int                         batteryLevel;                       // Taxi's battery level
     private Position                    position;                           // Taxi's position
 
-    private MqttClient MQTTClient;
-    private int qos;
+    private MqttClient                  MQTTClient;
+    private int                         qos;
+
+    private String                      currentRide;
 
     private boolean                     isAvailable;                        // Taxi is available to take the ride
     private Object                      availableLock;                      // Available's lock
@@ -232,6 +234,14 @@ public class TaxiUtils {
 
     public void setQos(int qos) {
         this.qos = qos;
+    }
+
+    public String getCurrentRide() {
+        return currentRide;
+    }
+
+    public void setCurrentRide(String currentRide) {
+        this.currentRide = currentRide;
     }
 
     @Override
