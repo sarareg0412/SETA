@@ -3,7 +3,6 @@ package taxi;
 import REST.TaxiResponse;
 import com.google.gson.Gson;
 import com.google.protobuf.Empty;
-import com.google.protobuf.TextFormat;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -13,10 +12,8 @@ import exceptions.taxi.TaxiAlreadyPresentException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.eclipse.paho.client.mqttv3.*;
-import ride.Ride;
 import simulator.MeasurementsBuffer;
 import simulator.PM10Simulator;
-import statistics.Stats;
 import statistics.modules.*;
 import taxi.modules.*;
 import taxi.modules.election.MainElectionThread;
@@ -28,26 +25,25 @@ import utils.Utils;
 
 import unimi.dps.ride.Ride.*;
 
-import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.concurrent.TimeUnit;
 
-@XmlRootElement
+
 public class Taxi {
     private TaxiInfo taxiInfo;                          // Taxi's info: id; port number and address
     private TaxiUtils taxiUtils;                        // Taxi's infos and list of other taxis shared between the taxi's thread
 
-    //Ride district subscription
-    private Client RESTClient;
-
-    private PM10Simulator pm10Simulator;
     //Threads
     private GRPCServerThread grpcServerThread;
     private StatsThread statsThread;
     private StdInThread stdInThread;
     private MainRechargeThread mainRechargeThread;
+    private PM10Simulator pm10Simulator;
+
+    private Client RESTClient;
+
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -70,10 +66,11 @@ public class Taxi {
             try {
                 // The taxi requests to join the network
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
-                System.out.println("> [INS] Taxi added with position: " + taxiResponse.getPosition());
+                //System.out.println("> [INS] Taxi added with position: " + taxiResponse.getPosition());
                 initTaxiUtils(taxiResponse.getPosition());
                 initThreads();
-
+                System.out.println("> [INS] Taxi correctly added to the network.");
+                System.out.println(taxiUtils);
                 if(taxiResponse.getTaxiInfoList() != null){
                     //There are other taxis in the network, the current taxi notifies them
                     //that it has been succesfully added to the network
@@ -143,6 +140,7 @@ public class Taxi {
                 RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                 //To overcome the fact that a message can arrive even if the taxi moved to another district for delays
                 if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
+                    // An election is started if the taxi is available and doesn't want to charge
                     if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
                         MainElectionThread electionThread = new MainElectionThread(rideMsg, statsThread.getStatsQueue());
                         electionThread.start();
@@ -171,10 +169,11 @@ public class Taxi {
         grpcServerThread = new GRPCServerThread();
         grpcServerThread.start();                           // RPC thread started
         stdInThread = new StdInThread();
+        mainRechargeThread = new MainRechargeThread();
+        // The measurements Buffer is created and shared between the stats thread and the PM10 Simulator
         MeasurementsBuffer buffer = new MeasurementsBuffer();
         statsThread = new StatsThread(buffer);
         pm10Simulator = new PM10Simulator(buffer);
-        mainRechargeThread = new MainRechargeThread();
     }
 
     public void initTaxi(){
@@ -186,7 +185,6 @@ public class Taxi {
             System.out.println("> Insert Taxi ID:");
 
             try {
-
                 taxiInfo.setId(inFromUser.readLine());
                 if (!taxiInfo.getId().equals(""))
                     check = false;
@@ -278,14 +276,8 @@ public class Taxi {
     * added to the network. */
     public void notifyOtherTaxi(TaxiInfoMsg request , TaxiInfo other) throws InterruptedException {
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
-
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         Empty result = stub.addTaxi(request);
-        try {
-            channel.awaitTermination(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            System.out.println("> [INS] [ERR] An error occurred while notifying other taxis.");
-        }
         channel.shutdown();
     }
 

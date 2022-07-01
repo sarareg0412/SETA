@@ -7,6 +7,7 @@ import exceptions.taxi.TaxiNotFoundException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import taxi.Taxi;
 import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
@@ -49,6 +50,7 @@ public class StdInThread extends Thread {
                 case 1:
                     try {
                         // Waits until taxi is available
+                        System.out.println("> [QUIT] Waiting for taxi to finish its work ...");
                         while (!TaxiUtils.getInstance().isAvailable()) {
                             try {
                                 synchronized (TaxiUtils.getInstance().getAvailableLock()) {
@@ -58,23 +60,20 @@ public class StdInThread extends Thread {
                                 e.printStackTrace();
                             }
                         }
-
                         System.out.println("> [QUIT] Taxi can now leave the network.");
-                        //Notifies Seta
-                        Utils.publishUnavailable(TaxiUtils.getInstance().getPosition(), TaxiUtils.getInstance().getMQTTClient(), TaxiUtils.getInstance().getQos());
+
                         stopTaxi();
                     } catch (Exception e) {
-                        System.out.println("> An error occurred while trying to leave the network. "
+                        System.out.println("> An error occurred while trying to leave the network. Please try later. "
                                 + e.getMessage());
                     }
-                    System.exit(0);
                     break;
                 case 2:
                     if (TaxiUtils.getInstance().wantsToCharge() || TaxiUtils.getInstance().isCharging()){
                         System.out.println("> [REC] Recharging process is already in place.");
                     }else {
-                        // Waits until taxi is available
                         System.out.println("> [RECH] Taxi wants to charge! ");
+                        // Waits until taxi is available
                         while (!TaxiUtils.getInstance().isAvailable()) {
                             try {
                                 synchronized (TaxiUtils.getInstance().getAvailableLock()) {
@@ -92,54 +91,46 @@ public class StdInThread extends Thread {
         }
     }
 
-    private void stopTaxi() throws Exception {
+    private void stopTaxi(){
+        try {
+            //Notifies Seta
+            Utils.publishUnavailable(TaxiUtils.getInstance().getPosition(), TaxiUtils.getInstance().getMQTTClient(), TaxiUtils.getInstance().getQos());
+            sendMessageToOthers();
+            deleteTaxi();
+            TaxiUtils.getInstance().getMQTTClient().disconnect();
+            TaxiUtils.getInstance().setQuit(true);
+            System.exit(0);
+        } catch (InterruptedException e) {
+            System.out.println("> Couldn't notify the other taxi while trying to leave the network.  Please try later. "
+                    + e.getMessage());
+        } catch (TaxiNotFoundException e) {
+            System.out.println(e.getMessage() + " Please try later.");
+        } catch (MqttException e) {
+            System.out.println("> An error occurred while disconnecting the client. Please try later.");
+        }
+    }
+
+    private void sendMessageToOthers() throws InterruptedException{
         TaxiInfoMsg taxiInfoMsg = TaxiInfoMsg.newBuilder()
-                                .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
-                                .build();
+                .setId(TaxiUtils.getInstance().getTaxiInfo().getId())
+                .build();
 
         for (Taxi other : TaxiUtils.getInstance().getTaxisList()) {
-            try {
                 /* The taxi notifies the others present in its list */
                 if(!other.getTaxiInfo().getId().equals(TaxiUtils.getInstance().getTaxiInfo().getId()))
                     notifyOtherTaxi(taxiInfoMsg, other);
-            } catch (InterruptedException e) {
-                System.out.println("> Couldn't notify the other taxi while trying to leave the network. "
-                        + e.getMessage());
-            }
         }
-
-        deleteTaxi();
     }
-
-
 
     /* The taxi acts as a client and notifies the other taxis that it wants to leave the network. */
     public void notifyOtherTaxi(TaxiInfoMsg request , Taxi other) throws InterruptedException {
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getTaxiInfo().getAddress()+":" + other.getTaxiInfo().getPort()).usePlaintext().build();
-
-        TaxiRPCServiceGrpc.TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
-
-        stub.removeTaxi(request, new StreamObserver<Empty>() {
-            @Override
-            public void onNext(Empty value) {
-                // The current taxi correctly notified the others
-                //System.out.println("> Other taxis correctly reached.");
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("> An error occurred while trying to leave the network. Couldn't reach the other taxis.");
-            }
-
-            @Override
-            public void onCompleted() {
-                channel.shutdown();
-            }
-        });
-        channel.awaitTermination(1, TimeUnit.SECONDS);
+        TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
+        stub.removeTaxi(request);
+        channel.shutdown();
     }
 
-    private void deleteTaxi() throws Exception {
+    private void deleteTaxi() throws TaxiNotFoundException{
         String path = Utils.servicesAddress + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
         System.out.println("ok " + clientResponse +"\n");
@@ -155,7 +146,7 @@ public class StdInThread extends Thread {
             //Taxi not present
             throw new TaxiNotFoundException();
         }else {
-            throw new Exception("> Status code: "+ statusInfo);
+            System.out.println("> [QUIT] An error occurred while leaving the network. Status code: "+ statusInfo);
         }
     }
 }

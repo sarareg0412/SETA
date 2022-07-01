@@ -1,7 +1,6 @@
 package taxi.modules;
 
 import io.grpc.ServerBuilder;
-import taxi.Taxi;
 import RPC.services.TaxiRPCServiceImpl;
 import taxi.TaxiUtils;
 

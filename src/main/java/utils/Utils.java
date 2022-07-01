@@ -155,12 +155,12 @@ public class Utils {
 
     public static void unsubscribe(MqttClient client, String topic) throws MqttException {
         client.unsubscribe(topic);
-        System.out.println("> Taxi unsubscribed from topic : " + topic);
+        //System.out.println("> Taxi unsubscribed from topic : " + topic);
     }
 
     public static void subscribeToTopic(MqttClient client, int qos, String topic) throws MqttException {
         client.subscribe(topic, qos);
-        System.out.println("> Taxi subscribed to topic : " + topic);
+        //System.out.println("> Taxi subscribed to topic : " + topic);
     }
 
     /* Notifies SETA that it is available */

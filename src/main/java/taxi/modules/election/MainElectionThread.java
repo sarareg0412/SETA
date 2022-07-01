@@ -72,10 +72,10 @@ public class MainElectionThread extends Thread{
                 e.printStackTrace();
             }
         }
-        System.out.println("counter ride "+ rideMsg.getId() + " " );
+
         if(electionCounter.getResponses() >= electionCounter.getMaxElements()){
             // The current taxi was elected by the others to take the ride
-            System.out.println("> [ELEC] Taxi is taking the ride ...");
+            System.out.println("> [ELEC] Taxi "+ taxiUtils.getTaxiInfo().getId() +" is taking ride "+ rideMsg.getId()+"...");
             taxiUtils.setCurrentRide(rideMsg.getId());
             taxiUtils.setAvailable(false);
             try {
@@ -86,7 +86,6 @@ public class MainElectionThread extends Thread{
             }
         }else {
             System.out.println("> [ELEC] Ride already taken.");
-
         }
     }
 
@@ -115,6 +114,7 @@ public class MainElectionThread extends Thread{
             Utils.publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
             Utils.subscribeToTopic(taxiUtils.getMQTTClient(), taxiUtils.getQos(), Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
             Utils.publishAvailable(taxiUtils.getMQTTClient(), taxiUtils.getQos(), taxiUtils.getPosition());
+            System.out.println("> Taxi changed district. " + taxiUtils);
         }
         // Taxi battery level decreases
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));

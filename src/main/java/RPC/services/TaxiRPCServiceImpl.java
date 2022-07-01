@@ -35,74 +35,72 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
         Empty empty = Empty.newBuilder().build();
         try {
             TaxiUtils.getInstance().removeTaxiFromList(request.getId());
-            System.out.println("> [QUIT] A Taxi leaved the network. Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " other taxis :" + Utils.printTaxiList(TaxiUtils.getInstance().getTaxisList()));
+            System.out.println("> [QUIT] Taxi " + request.getId() +" left the network. Taxi " + TaxiUtils.getInstance().getTaxiInfo().getId() + " other taxis :" + Utils.printTaxiList(TaxiUtils.getInstance().getTaxisList()));
             responseObserver.onNext(empty);     //Sends nothing back to the caller
         } catch (TaxiNotFoundException e) {
             responseObserver.onError(new TaxiNotFoundException());
         }
-
         responseObserver.onCompleted();
     }
 
     @Override
     public void startElection(ElectionMsg request, StreamObserver<OKMsg> responseObserver) {
         StringBuilder s = new StringBuilder().append("> [ELEC] Got an election request from "+ request.getId() + " for ride: " + request.getRide().getId());
+        OKMsg msg = null;
         //System.out.println(s);
-        if (TaxiUtils.getInstance().getCurrentRide().equals(request.getRide().getId())) {
-            //Requesting taxi is the same one who sent the request, returns ko
-            System.out.println(s.append(" same ride id:"+ request.getRide().getId()+". RESPONSE: KO"));
-            responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
-            responseObserver.onCompleted();
-        }
-        // Current taxi is not in the same district of the request, sends back OK
-        if (!TaxiUtils.getInstance().isInTheSameDistrict(new Position(request.getRide().getStart()))) {
-            System.out.println(s.append(" Different district. RESPONSE: OK"));
-            responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-            responseObserver.onCompleted();
-        } else {
-            //Current taxi is available and not recharging
-            if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().wantsToCharge()) {
-                Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
+        if (TaxiUtils.getInstance().isAvailable() && !TaxiUtils.getInstance().wantsToCharge()) {
+            //Current taxi is available and doesn't want to recharge
+            Position start = new Position(request.getRide().getStart().getX(), request.getRide().getStart().getY());
+            if(TaxiUtils.getInstance().isInTheSameDistrict(start)) {
+
                 double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                 if (distance == request.getDistance()) {
                     if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) >= 0) {
                         //Requesting taxi has higher id or is the same one who sent the request, returns ok
-                        System.out.println(s.append(" Equal distance. id:"+ (TaxiUtils.getInstance().getTaxiInfo().getId() +" RESPONSE: OK")));
-                        responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-                        responseObserver.onCompleted();
-                    }else {
+                        //System.out.println(s.append(" Equal distance. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: OK")));
+                        msg = OKMsg.newBuilder().setOk("OK").build();
+                    } else {
                         //Requesting taxi has lower id, returns KO
-                        System.out.println(s.append(" Equal distance. id:"+ (TaxiUtils.getInstance().getTaxiInfo().getId() +" RESPONSE: KO")));
-                        responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
-                        responseObserver.onCompleted();
+                        //System.out.println(s.append(" Equal distance. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: KO")));
+                        msg = OKMsg.newBuilder().setOk("KO").build();
                     }
                 } else {
                     if (distance < request.getDistance()) {
                         //Requesting taxi has lower distance, returns ok
-                        System.out.println(s.append("Lower distance. RESPONSE: OK"));
-                        responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-                        responseObserver.onCompleted();
-                    }else {
+                        //System.out.println(s.append(" Lower distance. RESPONSE: OK"));
+                        msg = OKMsg.newBuilder().setOk("OK").build();
+                    } else {
                         //Requesting taxi has Higher distance, returns KO
-                        System.out.println(s.append("> Higher distance. RESPONSE: KO"));
-                        responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
-                        responseObserver.onCompleted();
+                        //System.out.println(s.append(" Higher distance. RESPONSE: KO"));
+                        msg = OKMsg.newBuilder().setOk("KO").build();
                     }
                 }
-            } else {
-                //Current taxi is not available or wants to recharge, returns ok if id is different
+            }else {
+                // Current taxi is in another district, returns ok
+                //System.out.println(s.append(" different district. RESPONSE: OK"));
+                msg = OKMsg.newBuilder().setOk("OK").build();
+            }
+
+        } else {
+            //Current taxi is not available or wants to recharge, returns ok if id is different
+            if (!TaxiUtils.getInstance().wantsToCharge()) {
+                //Current taxi doesn't want to recharge, check on the ride because of delays
                 if (TaxiUtils.getInstance().getCurrentRide().equals(request.getRide().getId())) {
-                    //Requesting taxi is the same one who sent the request, returns ko
-                    System.out.println(s.append(" same ride id:"+ request.getRide().getId()+". RESPONSE: KO"));
-                    responseObserver.onNext(OKMsg.newBuilder().setOk("KO").build());
-                    responseObserver.onCompleted();
-                }else {
-                    System.out.println(s.append("I'm not available. RESPONSE: OK"));
-                    responseObserver.onNext(OKMsg.newBuilder().setOk("OK").build());
-                    responseObserver.onCompleted();
+                    //System.out.println(s.append(" Not available, same ride id:" + request.getRide().getId() + ". RESPONSE: KO"));
+                    msg = OKMsg.newBuilder().setOk("KO").build();
+                } else {
+                    //System.out.println(s.append(" Not available, different ride. RESPONSE: OK"));
+                    msg = OKMsg.newBuilder().setOk("OK").build();
                 }
+            }else {
+                //Current taxi wants to recharge, returns OK
+                //System.out.println(s.append(" Not available I want to recharge. RESPONSE: OK"));
+                msg = OKMsg.newBuilder().setOk("OK").build();
             }
         }
+
+        responseObserver.onNext(msg);
+        responseObserver.onCompleted();
     }
 
     @Override

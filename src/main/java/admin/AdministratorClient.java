@@ -200,7 +200,7 @@ public class AdministratorClient {
             if (response.getStatsList() != null){
                 computeAverage(response.getStatsList());
             }else
-                System.out.println("> There are no statistics between "+ t1 +" and "+ t2 +" yet.");
+                System.out.println("> There are no statistics between "+ t1 +" and "+ t2 +".");
         }else {
             throw new Exception("> An error occurred. Status code: "+ statusInfo);
         }

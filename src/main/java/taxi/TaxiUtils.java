@@ -26,8 +26,6 @@ public class TaxiUtils {
     private boolean                     isAvailable;                        // Taxi is available to take the ride
     private Object                      availableLock;                      // Available's lock
 
-    private boolean                     askRecharge;                        // Taxi asked from stdin to recharge
-    private Object                      askRechargeLock;                    // Ask recharge's lock
     private boolean                     isCharging;                         // Taxi is currently recharging
     private boolean                     wantsToCharge;                      // Taxi wants to charge
     private final Object                wantsToChargeLock;                  // Wants to charge lock
@@ -50,7 +48,6 @@ public class TaxiUtils {
         this.wantsToChargeLock = new Object();
         this.availableLock = new Object();
         this.inElectionLock = new Object();
-        this.askRechargeLock = new Object();
     }
 
     //Singleton instance that returns the list of taxis in the system
@@ -124,28 +121,6 @@ public class TaxiUtils {
 
     public Object getAvailableLock() {
         return availableLock;
-    }
-
-    public boolean askedToRecharge() {
-        synchronized (askRechargeLock) {
-            return askRecharge;
-        }
-    }
-
-    public void setAskRecharge(boolean askRecharge) {
-        synchronized (askRechargeLock){
-            this.askRecharge = askRecharge;
-            if (askRecharge)
-                askRechargeLock.notifyAll();
-        }
-    }
-
-    public Object getAskRechargeLock() {
-        return askRechargeLock;
-    }
-
-    public void setAskRechargeLock(Object askRechargeLock) {
-        this.askRechargeLock = askRechargeLock;
     }
 
     public synchronized boolean isCharging() {

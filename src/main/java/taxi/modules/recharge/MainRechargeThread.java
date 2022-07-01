@@ -51,7 +51,7 @@ public class MainRechargeThread extends Thread{
 
             try {
                 notifyAllWantsToRecharge(rechargeMsg);
-                waitAllOk();
+                waitAllOKs();
                 System.out.println("> [RECH] Taxi can now recharge.");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -89,7 +89,7 @@ public class MainRechargeThread extends Thread{
         }
     }
 
-    public void waitAllOk() throws InterruptedException {
+    public void waitAllOKs() throws InterruptedException {
         synchronized (taxiUtils.getRechargeCounter().getLock()) {
             while (taxiUtils.getRechargeCounter().getResponses() < taxiUtils.getRechargeCounter().getMaxElements()) {
                 taxiUtils.getRechargeCounter().getLock().wait();
