@@ -30,7 +30,7 @@ public class StatsThread extends Thread{
 
     @Override
     public void run() {
-        while (true){
+        while (!TaxiUtils.getInstance().quit()){
             try {
                 Thread.sleep(15000);        //Statistics are sent every 15 seconds
                 //The stats list gets emptied
@@ -40,7 +40,7 @@ public class StatsThread extends Thread{
                 int statusInfo = clientResponse.getStatus();
 
                 if (ClientResponse.Status.OK.getStatusCode() != statusInfo) {
-                    System.out.println(clientResponse);
+                    System.out.println("> An error occurred. Status code: "+ statusInfo);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();

@@ -1,12 +1,10 @@
 package taxi.modules;
 
-import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import exceptions.taxi.TaxiNotFoundException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import taxi.Taxi;
 import taxi.TaxiUtils;
@@ -17,7 +15,6 @@ import utils.Utils;
 import javax.ws.rs.HttpMethod;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.concurrent.TimeUnit;
 
 public class StdInThread extends Thread {
 
@@ -49,6 +46,18 @@ public class StdInThread extends Thread {
             switch (i) {
                 case 1:
                     try {
+
+                        System.out.println("> [QUIT] Waiting for taxi to finish election ...");
+                        while (TaxiUtils.getInstance().isInElection()) {
+                            try {
+                                synchronized (TaxiUtils.getInstance().getInElectionLock()) {
+                                    TaxiUtils.getInstance().getInElectionLock().wait();
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        System.out.println("> [QUIT] Taxi is not in election anymore.");
                         // Waits until taxi is available
                         System.out.println("> [QUIT] Waiting for taxi to finish its work ...");
                         while (!TaxiUtils.getInstance().isAvailable()) {
@@ -61,7 +70,6 @@ public class StdInThread extends Thread {
                             }
                         }
                         System.out.println("> [QUIT] Taxi can now leave the network.");
-
                         stopTaxi();
                     } catch (Exception e) {
                         System.out.println("> An error occurred while trying to leave the network. Please try later. "
@@ -123,7 +131,7 @@ public class StdInThread extends Thread {
     }
 
     /* The taxi acts as a client and notifies the other taxis that it wants to leave the network. */
-    public void notifyOtherTaxi(TaxiInfoMsg request , Taxi other) throws InterruptedException {
+    public void notifyOtherTaxi(TaxiInfoMsg request , Taxi other){
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getTaxiInfo().getAddress()+":" + other.getTaxiInfo().getPort()).usePlaintext().build();
         TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
         stub.removeTaxi(request);

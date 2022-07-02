@@ -2,7 +2,6 @@ package taxi;
 
 import exceptions.taxi.TaxiNotFoundException;
 import org.eclipse.paho.client.mqttv3.MqttClient;
-import simulator.MeasurementsBuffer;
 import utils.Counter;
 import utils.Position;
 import utils.Queue;
@@ -13,7 +12,7 @@ import java.util.List;
 
 /* Class containing all shared infos between the taxi's threads*/
 public class TaxiUtils {
-    private TaxiInfo                    taxiInfo;                       // Taxi's info: id; port number and address
+    private TaxiInfo                    taxiInfo;                           // Taxi's info: id; port number and address
     private List<Taxi>                  taxisList;                          // List of other taxis
     private int                         batteryLevel;                       // Taxi's battery level
     private Position                    position;                           // Taxi's position
@@ -29,15 +28,14 @@ public class TaxiUtils {
     private boolean                     isCharging;                         // Taxi is currently recharging
     private boolean                     wantsToCharge;                      // Taxi wants to charge
     private final Object                wantsToChargeLock;                  // Wants to charge lock
-    private Counter                     rechargeCounter;                    // Counter for # of taxi participating
+    private Counter                     rechargeCounter;
     private long                        rechargeTimestamp;
     private Queue<TaxiInfo>             rechargeRequests;                   // Queue of recharging requests
 
-    private Object                      inElectionLock;                      // Available's lock
+    private boolean                     inElection;                         // Taxi is in election
+    private Object                      inElectionLock;                     // Taxi is in election's lock
 
-    private boolean                     isMaster;                           // Taxi is selected to take the ride
-
-    private boolean                     quit;                               //Taxi wants to leave the network
+    private boolean                     quit;                               // Taxi wants to leave the network
 
     private static TaxiUtils instance;
 
@@ -65,7 +63,7 @@ public class TaxiUtils {
         this.taxiInfo = taxiInfo;
     }
 
-    public List<Taxi> getTaxisList() {
+    public synchronized List<Taxi> getTaxisList() {
         return new ArrayList<>(taxisList);
     }
 
@@ -135,14 +133,6 @@ public class TaxiUtils {
         return Utils.getDistrictFromPosition(getPosition()) == Utils.getDistrictFromPosition(position);
     }
 
-    public boolean isMaster() {
-        return isMaster;
-    }
-
-    public void setMaster(boolean master) {
-        isMaster = master;
-    }
-
     public boolean wantsToCharge() {
         synchronized (wantsToChargeLock){
             return wantsToCharge;
@@ -177,6 +167,26 @@ public class TaxiUtils {
 
     public void setRechargeTimestamp(long rechargeTimestamp) {
         this.rechargeTimestamp = rechargeTimestamp;
+    }
+
+    public boolean isInElection() {
+        synchronized (inElectionLock) {
+            return inElection;
+        }
+    }
+
+    public void setInElection(boolean inElection) {
+        synchronized (inElectionLock) {
+            this.inElection = inElection;
+            if (!inElection){
+                // Notifies all that the taxi is not in election
+                inElectionLock.notifyAll();
+            }
+        }
+    }
+
+    public Object getInElectionLock() {
+        return inElectionLock;
     }
 
     public boolean quit() {

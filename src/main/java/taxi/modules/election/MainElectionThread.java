@@ -32,6 +32,7 @@ public class MainElectionThread extends Thread{
     @Override
     public void run() {
         System.out.println("> [ELEC] NEW RIDE REQUEST " + TextFormat.shortDebugString(rideMsg));
+        taxiUtils.setInElection(true);
         try {
             startElection(rideMsg);
         } catch (MqttException e) {
@@ -73,11 +74,13 @@ public class MainElectionThread extends Thread{
             }
         }
 
-        if(electionCounter.getResponses() >= electionCounter.getMaxElements()){
+
+        if(electionCounter.getResponses() == electionCounter.getMaxElements()){
             // The current taxi was elected by the others to take the ride
             System.out.println("> [ELEC] Taxi "+ taxiUtils.getTaxiInfo().getId() +" is taking ride "+ rideMsg.getId()+"...");
             taxiUtils.setCurrentRide(rideMsg.getId());
             taxiUtils.setAvailable(false);
+            taxiUtils.setInElection(false);
             try {
                 publishTakenRide(rideMsg);
                 takeRide(new Ride(rideMsg));
@@ -86,6 +89,7 @@ public class MainElectionThread extends Thread{
             }
         }else {
             System.out.println("> [ELEC] Ride already taken.");
+            taxiUtils.setInElection(false);
         }
     }
 
@@ -118,7 +122,6 @@ public class MainElectionThread extends Thread{
         }
         // Taxi battery level decreases
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
-        taxiUtils.setMaster(false);
         taxiUtils.setCurrentRide("");
         System.out.println("> [ELEC] RIDE COMPLETED " + ride.getId());
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server

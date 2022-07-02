@@ -1,10 +1,6 @@
 package statistics;
 
-import simulator.Measurement;
-import taxi.TaxiInfo;
-
 import javax.xml.bind.annotation.XmlRootElement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 
 @XmlRootElement

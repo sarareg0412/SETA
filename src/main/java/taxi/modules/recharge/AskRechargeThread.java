@@ -2,11 +2,11 @@ package taxi.modules.recharge;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import taxi.TaxiInfo;
 import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
-import utils.Counter;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,17 +26,31 @@ public class AskRechargeThread extends Thread{
 
     private void reachOtherTaxi(TaxiInfo other, RechargeMsg rechargeMsg){
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(other.getAddress()+":" + other.getPort()).usePlaintext().build();
-        TaxiRPCServiceGrpc.TaxiRPCServiceBlockingStub stub = TaxiRPCServiceGrpc.newBlockingStub(channel);
-        // Blocking stub for the thread waits for the other taxi's response
-        OKMsg response = stub.askRecharge(rechargeMsg);
-        if (response.getOk().equals("OK")) {
-            TaxiUtils.getInstance().getRechargeCounter().addResponse();
+        TaxiRPCServiceGrpc.TaxiRPCServiceStub stub = TaxiRPCServiceGrpc.newStub(channel);
+        // Asyncronous stub for the thread can receive no response
+        stub.askRecharge(rechargeMsg, new StreamObserver<OKMsg>() {
+            @Override
+            public void onNext(OKMsg response) {
+                if (response.getOk().equals("OK")) {
+                    TaxiUtils.getInstance().getRechargeCounter().addResponse();
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                channel.shutdown();
+            }
+
+            @Override
+            public void onCompleted() {
+                channel.shutdown();
+            }
+        });
+
+        try {
+            channel.awaitTermination(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        channel.shutdown();
-//        try {
-//            channel.awaitTermination(1, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//            System.out.println("> [RECH] [ERR] An error occurred while waiting for the recharging channel request to shutdown");
-//        }
     }
 }
