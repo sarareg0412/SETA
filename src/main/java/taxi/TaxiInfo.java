@@ -5,9 +5,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 /* Class that holds the taxi's most important infos: id; port and address*/
 @XmlRootElement
 public class TaxiInfo {
-    private String id;
-    private int port;
-    private String address;
+    private String              id;
+    private int                 port;
+    private String              address;
 
     public TaxiInfo() {
     }

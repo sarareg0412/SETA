@@ -9,13 +9,13 @@ import java.io.IOException;
 public class AdministratorServer{
 
     public static void main(String argv[]) throws IOException {
-        initialize();
-        HttpServer httpServer = HttpServerFactory.create(Utils.servicesAddress);
+        HttpServer httpServer = HttpServerFactory.create(Utils.SERVICES_ADDRESS);
         httpServer.start();
 
         System.out.println("> Administrator Server running!");
-    }
-
-    public static void initialize(){
+        System.out.println("> Press ENTER to stop.");
+        System.in.read();
+        httpServer.stop(0);
+        System.out.println("> Administrator Server stopped.");
     }
 }

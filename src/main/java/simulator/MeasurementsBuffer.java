@@ -1,12 +1,8 @@
 package simulator;
 
-import taxi.TaxiUtils;
-import utils.Queue;
 import utils.Utils;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class MeasurementsBuffer implements Buffer{

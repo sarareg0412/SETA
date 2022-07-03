@@ -1,4 +1,4 @@
-package REST;
+package services.taxi;
 
 import taxi.TaxiInfo;
 import utils.Position;

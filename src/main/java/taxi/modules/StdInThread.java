@@ -139,7 +139,7 @@ public class StdInThread extends Thread {
     }
 
     private void deleteTaxi() throws TaxiNotFoundException{
-        String path = Utils.servicesAddress + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
+        String path = Utils.SERVICES_ADDRESS + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
         System.out.println("ok " + clientResponse +"\n");
         if (clientResponse == null){

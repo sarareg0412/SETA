@@ -1,9 +1,6 @@
-package REST;
+package services.stats;
 
 import exceptions.taxi.TaxiNotFoundException;
-import statistics.Statistics;
-import statistics.StatsResponse;
-import statistics.Stats;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;

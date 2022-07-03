@@ -3,8 +3,8 @@ package taxi.modules.election;
 import com.google.protobuf.TextFormat;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import ride.Ride;
-import statistics.Stats;
+import utils.Ride;
+import services.stats.Stats;
 import taxi.Taxi;
 import taxi.TaxiUtils;
 import unimi.dps.ride.Ride.*;
@@ -17,6 +17,7 @@ import utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Main Thread holding the election */
 public class MainElectionThread extends Thread{
     TaxiUtils taxiUtils;
     RideMsg rideMsg;
@@ -41,7 +42,7 @@ public class MainElectionThread extends Thread{
     }
 
     public void startElection(RideMsg rideMsg) throws MqttException {
-        //The message to send is created only once
+        //The message to send to the other taxis is created only once
         ElectionMsg electionMessage = ElectionMsg.newBuilder()
                                                 .setId(taxiUtils.getTaxiInfo().getId())
                                                 .setDistance(Utils.getDistanceBetweenPositions(taxiUtils.getPosition(),
@@ -57,8 +58,7 @@ public class MainElectionThread extends Thread{
         ArrayList<Thread> threads = new ArrayList<>();
 
         for (Taxi otherTaxi : others) {
-            // A new thread is created for the taxi to broadcasts the others and
-            // itself to see to pick the master to take the ride
+            // A new thread is created to broadcast and pick who takes the ride
             ElectionThread electionThread = new ElectionThread(otherTaxi.getTaxiInfo(), electionMessage, electionCounter);
             threads.add(electionThread);
         }
@@ -74,8 +74,7 @@ public class MainElectionThread extends Thread{
             }
         }
 
-
-        if(electionCounter.getResponses() == electionCounter.getMaxElements()){
+        if(electionCounter.getResponses() == electionCounter.getMaxResponses()){
             // The current taxi was elected by the others to take the ride
             System.out.println("> [ELEC] Taxi "+ taxiUtils.getTaxiInfo().getId() +" is taking ride "+ rideMsg.getId()+"...");
             taxiUtils.setCurrentRide(rideMsg.getId());
@@ -100,6 +99,7 @@ public class MainElectionThread extends Thread{
         taxiUtils.getMQTTClient().publish(Utils.TAKEN_RIDE, msg);
     }
 
+    /* Taxi computes the ride. */
     public void takeRide(Ride ride) throws MqttException {
 
         try {
@@ -114,11 +114,11 @@ public class MainElectionThread extends Thread{
 
         //Taxi subscribes to new distric topic if necessary
         if (Utils.getDistrictFromPosition(oldPosition) != Utils.getDistrictFromPosition(ride.getFinish())) {
-            Utils.unsubscribe(taxiUtils.getMQTTClient(), Utils.getDistrictTopicFromPosition(oldPosition));
+            Utils.unsubscribeFromTopic(taxiUtils.getMQTTClient(), Utils.getDistrictTopicFromPosition(oldPosition));
             Utils.publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
             Utils.subscribeToTopic(taxiUtils.getMQTTClient(), taxiUtils.getQos(), Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
             Utils.publishAvailable(taxiUtils.getMQTTClient(), taxiUtils.getQos(), taxiUtils.getPosition());
-            System.out.println("> Taxi changed district. " + taxiUtils);
+            System.out.println("> [ELEC] Taxi changed district. " + taxiUtils.toString().replaceFirst(">", ""));
         }
         // Taxi battery level decreases
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));

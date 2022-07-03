@@ -1,16 +1,16 @@
-package statistics;
+package services.stats;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 
 @XmlRootElement
+/* Class holding the statistics to be sent to the AdministratorServer class */
 public class Stats {
     private String taxiId;
     private String timestamp;
     private int battery;
 
     private double kmDriven;
-    //Statistics to be sent to the AdministratorServer class
     private ArrayList<Double> airPollutionLev;
     private int completedRides;
 

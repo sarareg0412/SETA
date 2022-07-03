@@ -3,10 +3,10 @@ package admin;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import exceptions.taxi.TaxiNotFoundException;
-import statistics.Stats;
-import statistics.StatsResponse;
+import services.stats.Stats;
+import services.stats.StatsResponse;
 import taxi.TaxiInfo;
-import REST.TaxiResponse;
+import services.taxi.TaxiResponse;
 import utils.Utils;
 
 import javax.ws.rs.HttpMethod;
@@ -18,33 +18,32 @@ import java.util.List;
 public class AdministratorClient {
     private static Client client = Client.create();
     private static BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));;
+    private static boolean quit = false;
 
     public static void main(String[] argv){
 
-        while (true) {
-            boolean check = true;
-            int n = 0;
-            while (check) {
-                System.out.println("> Select the service you want to ask for:");
-                System.out.println("> [1] Print the list of the taxis currently in the network.");
-                System.out.println("> [2] Print the average of n statistics of a Taxi.");
-                System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps.");
-                try {
-                    String s = inFromUser.readLine();
-                    if (!s.equals("")){
-                        n = Integer.parseInt(s);
-                        if (n<1 || n>4)
-                            throw new IOException();
-                        else
-                            check = false;
-                    }else
-                        throw new IOException();
-                } catch (IOException e) {
-                    System.out.println("> Please insert a valid number.");
-                }
-            }
+        while (!quit) {
+            System.out.println("\n> Select the service you want to ask for:");
+            System.out.println("> [1] Print the list of the taxis currently in the network.");
+            System.out.println("> [2] Print the average of n statistics of a Taxi.");
+            System.out.println("> [3] Print the average statistics of all taxis occurred between two timestamps.");
+            System.out.println("> Press ENTER to stop.");
 
-            startStatsService(n);
+            try {
+                String s = inFromUser.readLine();
+                if (!s.equals("")){
+                    int n = Integer.parseInt(s);
+                    if (n<1 || n>4)
+                        throw new IOException();
+                    else
+                        startStatsService(n);
+                }else {
+                    System.out.println("> Quitting Administrator Client.");
+                    quit = true;
+                }
+            } catch (IOException e) {
+                System.out.println("> Please insert a valid number.");
+            }
         }
     }
 
@@ -75,7 +74,7 @@ public class AdministratorClient {
     }
 
     public static void printTaxiList() throws Exception {
-        String path = Utils.servicesAddress + Utils.taxiServicePath + "/getTaxiList";
+        String path = Utils.SERVICES_ADDRESS + Utils.TAXI_SERVICE_PATH + "/getTaxiList";
         ClientResponse clientResponse = Utils.sendRequest(client, path, HttpMethod.GET);
 
         int statusInfo = clientResponse.getStatus();
@@ -134,7 +133,7 @@ public class AdministratorClient {
             }
         }
 
-        String path = Utils.servicesAddress + Utils.statsServicePath + "/getLastNTaxiStats/" + id +"/"+ n;
+        String path = Utils.SERVICES_ADDRESS + Utils.STATS_SERVICE_PATH + "/getLastNTaxiStats/" + id +"/"+ n;
         ClientResponse clientResponse = Utils.sendRequest(client, path, HttpMethod.GET);
         int statusInfo = clientResponse.getStatus();
 
@@ -190,7 +189,7 @@ public class AdministratorClient {
             }
         }
 
-        String path = Utils.servicesAddress + Utils.statsServicePath + "/getStatsBwTimestamps/" + t1.replace(' ', '_') +"/"+ t2.replace(' ', '_');
+        String path = Utils.SERVICES_ADDRESS + Utils.STATS_SERVICE_PATH + "/getStatsBwTimestamps/" + t1.replace(' ', '_') +"/"+ t2.replace(' ', '_');
         ClientResponse clientResponse = Utils.sendRequest(client, path, HttpMethod.GET);
         int statusInfo = clientResponse.getStatus();
 

@@ -1,8 +1,7 @@
-package statistics;
+package services.stats;
 
 import exceptions.taxi.TaxiNotFoundException;
 
-import javax.xml.bind.annotation.XmlElement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +60,7 @@ public class Statistics {
         return new ArrayList<>(listCopy.subList( 0, n));
     }
 
+    /* Returns a list of n statistics of each taxi between two timestamps */
     public List<Stats> getStatsBwTimestamps(String t1, String t2){
         t1 = t1.replace("_", " ");
         t2 = t2.replace("_", " ");

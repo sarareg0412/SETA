@@ -3,7 +3,6 @@ package taxi.modules.recharge;
 import taxi.Taxi;
 import taxi.TaxiInfo;
 import taxi.TaxiUtils;
-import taxi.modules.SendOKThread;
 import unimi.dps.ride.Ride;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
@@ -12,6 +11,7 @@ import utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Main Thread holding the recharge process */
 public class MainRechargeThread extends Thread{
     private TaxiUtils taxiUtils;
 
@@ -58,27 +58,29 @@ public class MainRechargeThread extends Thread{
             }
 
             System.out.println(taxiUtils);
-            taxiUtils.setWantsToCharge(false);
             taxiUtils.setCharging(true);
-            System.out.println("> [RECH] Taxi is recharging ...");
-            taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(Utils.getDistanceFromRechargeStation(taxiUtils.getPosition())));
+            taxiUtils.setWantsToCharge(false);
 
+            taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(Utils.getDistanceFromRechargeStation(taxiUtils.getPosition())));
+            taxiUtils.setPosition(Utils.getNearestStationPosition(taxiUtils.getPosition()));
+
+            System.out.println("> [RECH] Taxi is recharging ...");
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            taxiUtils.setPosition(Utils.getNearestStationPosition(taxiUtils.getPosition()));
             taxiUtils.setBatteryLevel(100);
-            taxiUtils.setAvailable(true);
             System.out.println("> [RECH] Taxi fully charged.");
             taxiUtils.setCharging(false);
+            taxiUtils.setAvailable(true);
             System.out.println(taxiUtils);
             sendAllPendingOK();
         }
     }
 
+    /* A Thread is created to ask each taxi if the current one can charge */
     private void notifyAllWantsToRecharge(RechargeMsg rechargeMsg) throws InterruptedException {
         ArrayList<Taxi> rechargeList = new ArrayList<>(taxiUtils.getTaxisList());
         taxiUtils.setRechargeCounter(new Counter(rechargeList.size()));
@@ -89,21 +91,23 @@ public class MainRechargeThread extends Thread{
         }
     }
 
+    /* Main Thread stops until it receives all OKs needed to recharge */
     public void waitAllOKs() throws InterruptedException {
         synchronized (taxiUtils.getRechargeCounter().getLock()) {
-            while (taxiUtils.getRechargeCounter().getResponses() < taxiUtils.getRechargeCounter().getMaxElements()) {
+            while (taxiUtils.getRechargeCounter().getResponses() < taxiUtils.getRechargeCounter().getMaxResponses()) {
                 taxiUtils.getRechargeCounter().getLock().wait();
             }
         }
     }
 
+    /* If taxi queued some requests while it was recharging, it sends back OK as soon as it finishes to recharge. */
     public void sendAllPendingOK(){
         List<TaxiInfo> list = new ArrayList<>(taxiUtils.getRechargeRequests().getAllAndEmptyQueue());
         OKMsg msg = OKMsg.newBuilder().setOk("OK").setId(TaxiUtils.getInstance().getTaxiInfo().getId()).build();
         if (list.size()>0){
                 System.out.println("> [RECH] Sending all pending OK.");
             for (TaxiInfo otherTaxiInfo : list){
-                SendOKThread t = new SendOKThread(otherTaxiInfo, Utils.RECHARGE, msg);
+                SendOKThread t = new SendOKThread(otherTaxiInfo, msg);
                 t.start();
             }
         System.out.println("> [RECH] Sending completed.");

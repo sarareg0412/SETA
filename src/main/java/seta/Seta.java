@@ -2,12 +2,13 @@ package seta;
 
 import com.google.protobuf.TextFormat;
 import org.eclipse.paho.client.mqttv3.*;
-import ride.Ride;
+import utils.Ride;
 import unimi.dps.ride.Ride.RideMsg;
 import utils.Position;
 import utils.RideChecker;
 import utils.Utils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,21 +33,24 @@ public class Seta {
         try {
             initializeComponents();
             System.out.println("> Seta correctly initialized.");
-            while (true){
+            System.out.println("> Press ENTER to stop.");
+            while (System.in.read() > 0){
                 // Two rides or more are published every 5 seconds
                 publishRides();
                 printSetaStatus();
-                Thread.sleep(10000);
+                Thread.sleep(5000);
             }
         }catch (MqttException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     public void initializeComponents() throws MqttException {
 
-        setaUtils.setClient( new MqttClient(Utils.MQTTBrokerAddress, MqttClient.generateClientId()));
+        setaUtils.setClient( new MqttClient(Utils.MQTT_BROKER_ADDRESS, MqttClient.generateClientId()));
         setaUtils.setConnOpts(new MqttConnectOptions());
         setaUtils.getConnOpts().setCleanSession(true);
         setaUtils.setQos(2);

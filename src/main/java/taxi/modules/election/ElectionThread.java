@@ -2,15 +2,13 @@ package taxi.modules.election;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import taxi.Taxi;
 import taxi.TaxiInfo;
-import taxi.TaxiUtils;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Counter;
 
-import java.util.concurrent.TimeUnit;
-
+/* Thread in charge of notifying a taxi that an election is in place, and to
+ * register the response */
 public class ElectionThread extends Thread{
 
     TaxiInfo otherTaxiInfo;

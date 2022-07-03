@@ -1,4 +1,4 @@
-package REST;
+package services.taxi;
 
 import exceptions.taxi.TaxiAlreadyPresentException;
 import exceptions.taxi.TaxiNotFoundException;

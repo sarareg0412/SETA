@@ -1,4 +1,4 @@
-package statistics;
+package services.stats;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -8,6 +8,7 @@ import java.util.List;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
+/* Response from the Admin Server keeping all statistics needed*/
 public class StatsResponse {
 
     @XmlElement(name = "statsList")

@@ -1,4 +1,4 @@
-package REST;
+package services.taxi;
 
 import exceptions.taxi.TaxiAlreadyPresentException;
 import exceptions.taxi.TaxiNotFoundException;
@@ -8,6 +8,7 @@ import utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Singleton class that holds the taxi list */
 public class TaxiNetwork {
 
     private List<TaxiInfo> taxiInfoList;

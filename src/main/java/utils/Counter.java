@@ -1,13 +1,14 @@
 package utils;
 
+/* Class used as a counter for the election and the recharge processes */
 public class Counter {
 
-    private int maxElements;
-    private int responses;
-    private final Object lock;
+    private int                         maxResponses;               // Max responses possibles
+    private int                         responses;                  // Current number of responses gotten
+    private final Object                lock;                       // Responses' lock
 
     public Counter(int maxElements) {
-        this.maxElements = maxElements;
+        this.maxResponses = maxElements;
         this.responses = 0;
         this.lock = new Object();
     }
@@ -23,8 +24,8 @@ public class Counter {
         return lock;
     }
 
-    public synchronized int getMaxElements() {
-        return maxElements;
+    public synchronized int getMaxResponses() {
+        return maxResponses;
     }
 
     public synchronized int getResponses() {

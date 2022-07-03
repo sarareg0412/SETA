@@ -10,6 +10,7 @@ import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 
 import java.util.concurrent.TimeUnit;
 
+/* Thread used to ask each taxi if the current one can recharge */
 public class AskRechargeThread extends Thread{
     TaxiInfo otherTaxiInfo;
     RechargeMsg rechargeMsg;

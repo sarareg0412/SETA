@@ -1,4 +1,4 @@
-package statistics.modules;
+package taxi.modules.statistics;
 
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
@@ -7,7 +7,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import simulator.Measurement;
 import simulator.MeasurementsBuffer;
-import statistics.Stats;
+import services.stats.Stats;
 import taxi.TaxiUtils;
 import utils.Queue;
 import utils.Utils;
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/* Thread that sends the statistics of a taxi every 15 seconds to the Admin server*/
 public class StatsThread extends Thread{
     private Queue<Stats> statsQueue;
     private Client client = Client.create();
@@ -35,7 +36,7 @@ public class StatsThread extends Thread{
                 Thread.sleep(15000);        //Statistics are sent every 15 seconds
                 //The stats list gets emptied
                 Stats finalStat = computeStats(statsQueue.getAllAndEmptyQueue());
-                String path = Utils.servicesAddress + Utils.statsServicePath + "/add";
+                String path = Utils.SERVICES_ADDRESS + Utils.STATS_SERVICE_PATH + "/add";
                 ClientResponse clientResponse = sendPOSTRequest(client, path, finalStat);
                 int statusInfo = clientResponse.getStatus();
 

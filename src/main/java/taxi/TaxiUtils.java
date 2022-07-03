@@ -37,7 +37,7 @@ public class TaxiUtils {
 
     private boolean                     quit;                               // Taxi wants to leave the network
 
-    private static TaxiUtils instance;
+    private static TaxiUtils            instance;
 
     public TaxiUtils() {
         this.taxisList = new ArrayList<>();

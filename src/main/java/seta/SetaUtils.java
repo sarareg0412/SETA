@@ -2,15 +2,13 @@ package seta;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import ride.Ride;
-import taxi.TaxiUtils;
+import utils.Ride;
 import utils.Utils;
 import unimi.dps.ride.Ride.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SetaUtils {
     private Map<Integer, List<Ride>>            pendingRides;               // Map of pending rides by district

@@ -1,11 +1,12 @@
 package taxi.modules;
 
 import io.grpc.ServerBuilder;
-import RPC.services.TaxiRPCServiceImpl;
+import services.taxi.TaxiRPCServiceImpl;
 import taxi.TaxiUtils;
 
 import java.io.IOException;
 
+/* Thread used to start the GRPC server */
 public class GRPCServerThread extends Thread {
 
     @Override

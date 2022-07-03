@@ -1,4 +1,4 @@
-package RPC.services;
+package services.taxi;
 
 import com.google.protobuf.Empty;
 import exceptions.taxi.TaxiNotFoundException;

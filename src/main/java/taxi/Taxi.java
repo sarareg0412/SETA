@@ -1,6 +1,6 @@
 package taxi;
 
-import REST.TaxiResponse;
+import services.taxi.TaxiResponse;
 import com.google.gson.Gson;
 import com.google.protobuf.Empty;
 import com.sun.jersey.api.client.Client;
@@ -14,10 +14,10 @@ import io.grpc.ManagedChannelBuilder;
 import org.eclipse.paho.client.mqttv3.*;
 import simulator.MeasurementsBuffer;
 import simulator.PM10Simulator;
-import statistics.modules.*;
 import taxi.modules.*;
 import taxi.modules.election.MainElectionThread;
 import taxi.modules.recharge.MainRechargeThread;
+import taxi.modules.statistics.StatsThread;
 import unimi.dps.taxi.TaxiRPCServiceGrpc;
 import unimi.dps.taxi.TaxiRPCServiceOuterClass.*;
 import utils.Position;
@@ -32,18 +32,17 @@ import java.io.InputStreamReader;
 
 
 public class Taxi {
-    private TaxiInfo taxiInfo;                          // Taxi's info: id; port number and address
-    private TaxiUtils taxiUtils;                        // Taxi's infos and list of other taxis shared between the taxi's thread
+    private TaxiInfo                    taxiInfo;               // Taxi's info: id; port number and address
+    private TaxiUtils                   taxiUtils;              // Taxi's utilis shared between the taxi's thread
 
     //Threads
-    private GRPCServerThread grpcServerThread;
+    private GRPCServerThread            grpcServerThread;
     private StatsThread statsThread;
-    private StdInThread stdInThread;
-    private MainRechargeThread mainRechargeThread;
-    private PM10Simulator pm10Simulator;
+    private StdInThread                 stdInThread;
+    private MainRechargeThread          mainRechargeThread;
+    private PM10Simulator               pm10Simulator;
 
-    private Client RESTClient;
-
+    private Client                      RESTClient;
 
     public static void main(String argv[]){
         Taxi taxi = new Taxi();
@@ -66,7 +65,7 @@ public class Taxi {
             try {
                 // The taxi requests to join the network
                 TaxiResponse taxiResponse = insertTaxi(taxiInfo);
-                //System.out.println("> [INS] Taxi added with position: " + taxiResponse.getPosition());
+
                 initTaxiUtils(taxiResponse.getPosition());
                 initThreads();
                 System.out.println("> [INS] Taxi correctly added to the network.");
@@ -123,7 +122,7 @@ public class Taxi {
     }
 
     public void initMqttComponents() throws MqttException {
-        taxiUtils.setMQTTClient(new MqttClient(Utils.MQTTBrokerAddress, taxiInfo.getId()));
+        taxiUtils.setMQTTClient(new MqttClient(Utils.MQTT_BROKER_ADDRESS, taxiInfo.getId()));
         taxiUtils.setQos(2);
         MqttConnectOptions connOpts = new MqttConnectOptions();
         connOpts.setCleanSession(true);
@@ -160,7 +159,7 @@ public class Taxi {
         taxiUtils = TaxiUtils.getInstance();
         taxiUtils.setTaxiInfo(taxiInfo);
         taxiUtils.setPosition(position);
-        taxiUtils.setBatteryLevel(Utils.MAX_BATTERY);       // Taxi initialized with max battery
+        taxiUtils.setBatteryLevel(Utils.MAX_BATTERY_LEVEL);       // Taxi initialized with max battery
         taxiUtils.setAvailable(true);                       // Taxi is set available to take rides
         taxiUtils.setCharging(false);                       // Taxi is not recharging
     }
@@ -237,7 +236,7 @@ public class Taxi {
 
     /* A new taxi requested to enter the smart city */
     public TaxiResponse insertTaxi(TaxiInfo taxiInfo) throws Exception {
-        String path = Utils.servicesAddress + Utils.taxiServicePath + "/add";
+        String path = Utils.SERVICES_ADDRESS + Utils.TAXI_SERVICE_PATH + "/add";
         ClientResponse clientResponse = sendPOSTRequest(RESTClient, path, taxiInfo);
         if (clientResponse == null){
             //TODO
