@@ -136,14 +136,22 @@ public class Taxi {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
-                //To overcome the fact that a message can arrive even if the taxi moved to another district for delays
-                if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
-                    // An election is started if the taxi is available and doesn't want to charge
-                    if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
-                        MainElectionThread electionThread = new MainElectionThread(rideMsg, statsThread.getStatsQueue());
-                        electionThread.start();
-                        electionThread.join();
+                if (!taxiUtils.quit()) {
+                    if (topic.equals(Utils.SETA_AVAILABLE)) {
+                        System.out.println("> [INS] Seta is now available.");
+                        Utils.publishAvailable(taxiUtils.getMQTTClient(), taxiUtils.getQos(), taxiUtils.getPosition());
+                    } else {
+                        // A new ride request has arrived
+                        RideMsg rideMsg = RideMsg.parseFrom(message.getPayload());
+                        //To overcome the fact that a message can arrive even if the taxi moved to another district for delays
+                        if (taxiUtils.isInTheSameDistrict(new Position(rideMsg.getStart()))) {
+                            // An election is started if the taxi is available and doesn't want to charge
+                            if (!taxiUtils.wantsToCharge() && taxiUtils.isAvailable()) {
+                                MainElectionThread electionThread = new MainElectionThread(rideMsg, statsThread.getStatsQueue());
+                                electionThread.start();
+                                electionThread.join();
+                            }
+                        }
                     }
                 }
             }
@@ -153,6 +161,8 @@ public class Taxi {
 
             }
         });
+
+        taxiUtils.getMQTTClient().subscribe(Utils.SETA_AVAILABLE, taxiUtils.getQos());
     }
 
     public void initTaxiUtils(Position position){

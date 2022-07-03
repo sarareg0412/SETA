@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+/* Class holding the project's utils */
 public class Utils {
     public static final String              SERVICES_ADDRESS = "http://localhost:1337/";
     public static final String              TAXI_SERVICE_PATH = "taxis";
@@ -25,6 +26,7 @@ public class Utils {
 
     public static final String              MQTT_BROKER_ADDRESS = "tcp://localhost:1883";
 
+    public static final String              SETA_AVAILABLE = "seta/smartcity/seta/available/";
     public static final String              TAKEN_RIDE = "seta/smartcity/rides/taken";
     public static final String              TAXI_AVAILABLE = "seta/smartcity/taxi/available/";
     public static final String              TAXI_UNAVAILABLE = "seta/smartcity/taxi/unavailable/";
@@ -78,7 +80,7 @@ public class Utils {
     }
 
     public static double getDistanceBetweenPositions(Position p1, Position p2){
-        return Math.sqrt((Math.pow( p1.getX() + p2.getX(),2)) + (Math.pow( p1.getY() + p2.getY(),2)));
+        return Math.sqrt((Math.pow( p1.getX() - p2.getX(),2)) + (Math.pow( p1.getY() - p2.getY(),2)));
     }
 
     /* Given a client, url and object, send a DELETE request with that object as parameter*/

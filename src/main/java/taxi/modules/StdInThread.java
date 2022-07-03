@@ -101,12 +101,14 @@ public class StdInThread extends Thread {
 
     private void stopTaxi(){
         try {
+            TaxiUtils.getInstance().setQuit(true);
             //Notifies Seta
             Utils.publishUnavailable(TaxiUtils.getInstance().getPosition(), TaxiUtils.getInstance().getMQTTClient(), TaxiUtils.getInstance().getQos());
+            System.out.println("> [QUIT] Seta correctly notified. ");
             sendMessageToOthers();
+            System.out.println("> [QUIT] Other taxis correctly notified. ");
             deleteTaxi();
             TaxiUtils.getInstance().getMQTTClient().disconnect();
-            TaxiUtils.getInstance().setQuit(true);
             System.exit(0);
         } catch (InterruptedException e) {
             System.out.println("> Couldn't notify the other taxi while trying to leave the network.  Please try later. "
@@ -141,10 +143,7 @@ public class StdInThread extends Thread {
     private void deleteTaxi() throws TaxiNotFoundException{
         String path = Utils.SERVICES_ADDRESS + "taxis" + "/delete/" + TaxiUtils.getInstance().getTaxiInfo().getId();
         ClientResponse clientResponse = Utils.sendRequest(Client.create(), path, HttpMethod.DELETE);
-        System.out.println("ok " + clientResponse +"\n");
-        if (clientResponse == null){
-            //TODO
-        }
+
         int statusInfo = clientResponse.getStatus();
 
         if (ClientResponse.Status.OK.getStatusCode() == statusInfo) {

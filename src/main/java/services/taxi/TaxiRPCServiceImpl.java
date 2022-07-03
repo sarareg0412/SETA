@@ -55,14 +55,28 @@ public class TaxiRPCServiceImpl extends TaxiRPCServiceImplBase {
 
                 double distance = Utils.getDistanceBetweenPositions(TaxiUtils.getInstance().getPosition(), start);
                 if (distance == request.getDistance()) {
-                    if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) >= 0) {
-                        //Requesting taxi has higher id or is the same one who sent the request, returns ok
-                        //System.out.println(s.append(" Equal distance. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: OK")));
-                        msg = OKMsg.newBuilder().setOk("OK").build();
-                    } else {
-                        //Requesting taxi has lower id, returns KO
-                        //System.out.println(s.append(" Equal distance. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: KO")));
-                        msg = OKMsg.newBuilder().setOk("KO").build();
+                    int battery = TaxiUtils.getInstance().getBatteryLevel();
+                    // Battery check
+                    if (battery == request.getBattery()){
+                        if (TaxiUtils.getInstance().getTaxiInfo().getId().compareToIgnoreCase(request.getId()) >= 0) {
+                            //Requesting taxi has higher id or is the same one who sent the request, returns ok
+                            //System.out.println(s.append(" Equal distance and battery. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: OK")));
+                            msg = OKMsg.newBuilder().setOk("OK").build();
+                        } else {
+                            //Requesting taxi has lower id, returns KO
+                            //System.out.println(s.append(" Equal distance. id:" + (TaxiUtils.getInstance().getTaxiInfo().getId() + " RESPONSE: KO")));
+                            msg = OKMsg.newBuilder().setOk("KO").build();
+                        }
+                    }else{
+                        if (battery < request.getBattery()) {
+                            // Current taxi has lower battery, returns ok
+                            //System.out.println(s.append(" Equal distance, higher battery. RESPONSE: OK")));
+                            msg = OKMsg.newBuilder().setOk("OK").build();
+                        } else {
+                            // Current taxi has higher battery, returns KO
+                            //System.out.println(s.append(" Equal distance, lower battery. RESPONSE: KO")));
+                            msg = OKMsg.newBuilder().setOk("KO").build();
+                        }
                     }
                 } else {
                     if (distance < request.getDistance()) {

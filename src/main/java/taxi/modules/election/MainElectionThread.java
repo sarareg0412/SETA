@@ -118,7 +118,7 @@ public class MainElectionThread extends Thread{
             Utils.publishUnavailable(oldPosition,taxiUtils.getMQTTClient(), taxiUtils.getQos());
             Utils.subscribeToTopic(taxiUtils.getMQTTClient(), taxiUtils.getQos(), Utils.getDistrictTopicFromPosition(taxiUtils.getPosition()));
             Utils.publishAvailable(taxiUtils.getMQTTClient(), taxiUtils.getQos(), taxiUtils.getPosition());
-            System.out.println("> [ELEC] Taxi changed district. " + taxiUtils.toString().replaceFirst(">", ""));
+            System.out.println("> [ELEC] Taxi "+ taxiUtils.getTaxiInfo().getId()+" is now in D" + Utils.getDistrictFromPosition(taxiUtils.getPosition()));
         }
         // Taxi battery level decreases
         taxiUtils.setBatteryLevel(taxiUtils.getBatteryLevel() - (int) Math.floor(ride.getKmToTravel(oldPosition)));
@@ -126,6 +126,8 @@ public class MainElectionThread extends Thread{
         System.out.println("> [ELEC] RIDE COMPLETED " + ride.getId());
         // Adds the stats of the current ride to the queue of stats to be sent to the Admin Server
         addStatsToQueue(ride.getKmToTravel(oldPosition));
+
+        System.out.println(taxiUtils);
         if (taxiUtils.getBatteryLevel() < Utils.MIN_BATTERY_LEVEL){
             System.out.println("> [REC] Taxi needs to charge!");
             taxiUtils.setWantsToCharge(true);
@@ -133,6 +135,7 @@ public class MainElectionThread extends Thread{
             taxiUtils.setAvailable(true);
         }
     }
+
     private void addStatsToQueue(double km){
         Stats stats = new Stats();
         stats.setTaxiId(taxiUtils.getTaxiInfo().getId());

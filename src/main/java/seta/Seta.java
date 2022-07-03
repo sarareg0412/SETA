@@ -5,10 +5,8 @@ import org.eclipse.paho.client.mqttv3.*;
 import utils.Ride;
 import unimi.dps.ride.Ride.RideMsg;
 import utils.Position;
-import utils.RideChecker;
 import utils.Utils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +16,6 @@ citizens of the smart city. */
 public class Seta {
     private SetaUtils setaUtils;
     private int rideCounter = 0;
-    private RideChecker rideChecker = new RideChecker();
 
     public Seta() {
         setaUtils = SetaUtils.getInstance();
@@ -33,8 +30,10 @@ public class Seta {
         try {
             initializeComponents();
             System.out.println("> Seta correctly initialized.");
-            System.out.println("> Press ENTER to stop.");
-            while (System.in.read() > 0){
+            StdInSetaThread ioThread = new StdInSetaThread();
+            ioThread.start();
+
+            while (true){
                 // Two rides or more are published every 5 seconds
                 publishRides();
                 printSetaStatus();
@@ -43,8 +42,6 @@ public class Seta {
         }catch (MqttException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -68,7 +65,6 @@ public class Seta {
                 if (topic.equals(Utils.TAKEN_RIDE)){
                     RideMsg rideMsg =  RideMsg.parseFrom(message.getPayload());
                     setaUtils.removePendingRideFromMap(rideMsg);
-                    rideChecker.addRide(Integer.parseInt(rideMsg.getId()));
                 }else {
                     String topic2 = topic.substring(0,topic.length() - 1);
                     switch (topic2){
@@ -96,6 +92,11 @@ public class Seta {
         setaUtils.getClient().subscribe(Utils.TAKEN_RIDE, setaUtils.getQos());
         setaUtils.getClient().subscribe(Utils.TAXI_AVAILABLE + "#", setaUtils.getQos());
         setaUtils.getClient().subscribe(Utils.TAXI_UNAVAILABLE + "#", setaUtils.getQos());
+
+        MqttMessage msg = new MqttMessage("Seta Is Online!".getBytes());
+        msg.setQos(setaUtils.getQos());
+        System.out.println("> Notifying Taxis that Seta is online");
+        setaUtils.getClient().publish(Utils.SETA_AVAILABLE, msg);
     }
 
     public void publishRides() throws MqttException, InterruptedException {
